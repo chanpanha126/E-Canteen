@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AUPP E-Canteen — QR Menu & Digital Ordering</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen antialiased">
+
+  <!-- Toast Notification Stack -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none"></div>
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
+          EC
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">AUPP E-Canteen</h1>
+          <p class="text-[11px] text-slate-500">Group 8 • QR Ordering &amp; Bakong KHQR</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          id="table-badge-btn"
+          type="button"
+          class="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-colors"
+          title="Click to switch table number"
+        >
+          Table <span id="table-badge-number">#1</span>
+        </button>
+
+        <button
+          id="open-history-btn"
+          type="button"
+          class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors inline-flex items-center"
+          title="Order History"
+        >
+          <span class="hidden sm:inline">History</span>
+          <span class="sm:hidden">📜</span>
+        </button>
+
+        <a
+          href="/staff.html"
+          class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold hover:bg-slate-200 transition-colors hidden md:inline-flex"
+        >
+          Staff Panel
+        </a>
+
+        <button
+          id="open-cart-btn"
+          type="button"
+          class="relative px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+        >
+          <span>🛒 Cart</span>
+          <span
+            id="cart-count-badge"
+            class="hidden bg-rose-500 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+          >0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Live Order Tracking Banner (Hidden until order is placed) -->
+    <section
+      id="order-tracking-section"
+      class="hidden rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-5 shadow-sm transition-colors"
+    >
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Active Order</span>
+            <span id="tracking-order-meta" class="text-xs text-slate-600 font-medium">Order #101 • Table #1</span>
+            <span id="tracking-status-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-amber-950">
+              PREPARING
+            </span>
+          </div>
+
+          <div class="mt-2 flex items-baseline gap-3">
+            <span class="text-xs text-slate-600 font-semibold uppercase">Queue Number:</span>
+            <span id="tracking-queue-number" class="text-3xl font-black tracking-tight text-slate-900">A-001</span>
+          </div>
+
+          <p id="tracking-status-message" class="text-sm text-indigo-900 mt-1">
+            The canteen kitchen is preparing your food.
+          </p>
+          <p id="tracking-polling-indicator" class="text-[11px] text-slate-500 mt-2 font-mono">
+            Checking status every 3s via Fetch API...
+          </p>
+        </div>
+
+        <div class="flex flex-col items-start sm:items-end gap-2 shrink-0">
+          <button
+            id="enable-notifications-btn"
+            type="button"
+            class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+          >
+            🔔 Enable Pickup Notification
+          </button>
+          <button
+            id="dismiss-tracking-btn"
+            type="button"
+            class="text-xs text-slate-500 hover:text-slate-800 underline"
+          >
+            Hide tracker
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Menu Controls: Search & Categories -->
+    <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div id="category-tabs" class="flex items-center gap-2 overflow-x-auto pb-1">
+        <button type="button" data-category="all">All Menu</button>
+        <button type="button" data-category="food">🍛 Food</button>
+        <button type="button" data-category="drinks">🧋 Drinks &amp; Cafe</button>
+        <button type="button" data-category="dessert">🥭 Dessert</button>
+      </div>
+
+      <div class="relative w-full sm:w-64">
+        <input
+          id="menu-search"
+          type="search"
+          placeholder="Search food, drinks, dessert..."
+          class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+    </section>
+
+    <!-- Menu Grid -->
+    <section>
+      <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+  </main>
+
+  <!-- Slide-over Cart Drawer -->
+  <div id="cart-backdrop" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"></div>
+  <aside
+    id="cart-drawer"
+    class="fixed top-0 right-0 z-50 h-full w-full max-w-md bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col"
+  >
+    <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-extrabold text-slate-900">Your Order Cart</h2>
+        <p id="cart-table-number" class="text-xs font-semibold text-indigo-600">Table #1</p>
+      </div>
+      <button
+        id="close-cart-btn"
+        type="button"
+        class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+        aria-label="Close cart"
+      >✕</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-5 space-y-3">
+      <div id="cart-empty-state" class="text-center py-12">
+        <p class="text-3xl mb-2">🛒</p>
+        <p class="text-sm font-semibold text-slate-700">Your cart is empty</p>
+        <p class="text-xs text-slate-500 mt-1">Select food, drinks, or desserts from the menu.</p>
+      </div>
+
+      <div id="cart-items-list" class="space-y-3"></div>
+    </div>
+
+    <div class="p-5 border-t border-slate-200 bg-slate-50 space-y-3">
+      <div>
+        <label for="customer-note-input" class="block text-xs font-semibold text-slate-600 mb-1">
+          Order Note (Optional)
+        </label>
+        <input
+          id="customer-note-input"
+          type="text"
+          maxlength="120"
+          placeholder="e.g., Less ice, no sugar..."
+          class="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      <div class="flex items-center justify-between text-base font-extrabold text-slate-900 pt-1">
+        <span>Total</span>
+        <span id="cart-subtotal">$0.00</span>
+      </div>
+
+      <button
+        id="proceed-checkout-btn"
+        type="button"
+        disabled
+        class="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+      >
+        Proceed to Bakong KHQR Payment
+      </button>
+    </div>
+  </aside>
+
+  <!-- Bakong KHQR Payment Modal -->
+  <div id="khqr-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
+      <!-- Official KHQR-Inspired Red Header -->
+      <div class="bg-[#E1232E] text-white px-5 py-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-widest font-bold opacity-90">Bakong Payment</p>
+          <h3 class="text-lg font-black tracking-tight">KHQR</h3>
+        </div>
+        <button
+          id="close-khqr-btn"
+          type="button"
+          class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-sm"
+        >✕</button>
+      </div>
+
+      <div class="p-5 space-y-4 text-center">
+        <p id="khqr-order-summary" class="text-xs text-slate-500 font-medium truncate"></p>
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col items-center">
+          <div id="khqr-loading" class="py-16 text-xs text-slate-500">Generating real KHQR code...</div>
+          <img
+            id="khqr-image"
+            alt="Bakong KHQR Code"
+            class="hidden w-52 h-52 object-contain rounded-lg bg-white p-2 border border-slate-200"
+          />
+          <p id="khqr-amount-display" class="text-xl font-black text-slate-900 mt-3">$0.00 USD</p>
+          <p id="khqr-account-display" class="text-xs font-semibold text-slate-600 mt-0.5"></p>
+          <p id="khqr-md5-display" class="text-[10px] font-mono text-slate-400 mt-1 break-all"></p>
+        </div>
+
+        <label class="flex items-center justify-center gap-2 text-xs text-slate-700 cursor-pointer select-none">
+          <input id="khqr-demo-amount-toggle" type="checkbox" class="rounded border-slate-300 text-indigo-600" />
+          <span>Use <strong>100 KHR</strong> (~$0.03) for live ABA scan test</span>
+        </label>
+
+        <p id="khqr-mode-status" class="text-[11px] text-indigo-700 bg-indigo-50 px-3 py-2 rounded-xl font-medium"></p>
+
+        <button
+          id="simulate-khqr-pay-btn"
+          type="button"
+          class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-colors shadow-sm"
+        >
+          ✓ Simulate Payment Confirmed (Demo)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order History Modal -->
+  <div id="history-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl border border-slate-200">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="text-base font-extrabold text-slate-900">Your Recent Orders</h3>
+        <button id="close-history-btn" type="button" class="text-slate-500 hover:text-slate-900 font-bold">✕</button>
+      </div>
+      <div id="history-list" class="p-5 overflow-y-auto space-y-3"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initTableNumber, initCartEvents } from './js/cart.js';
+    import { initMenuEvents } from './js/menu.js';
+    import { initCheckoutEvents } from './js/checkout.js';
+    import { initTrackingEvents } from './js/tracking.js';
+
+    initTableNumber();
+    initCartEvents();
+    initMenuEvents();
+    initCheckoutEvents();
+    initTrackingEvents();
+  </script>
+</body>
+</html>

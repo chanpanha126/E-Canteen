@@ -1,0 +1,102 @@
+[
+  {
+    "id": "food-01",
+    "name": "Chicken Fried Rice",
+    "category": "food",
+    "price": 3.5,
+    "available": true,
+    "rating": 4.8,
+    "description": "Wok-tossed jasmine rice with roasted chicken, egg, and fresh cucumber.",
+    "emoji": "🍛"
+  },
+  {
+    "id": "food-02",
+    "name": "Beef Lok Lak",
+    "category": "food",
+    "price": 4.5,
+    "available": true,
+    "rating": 4.9,
+    "description": "Tender stir-fried Cambodian beef served with steamed rice and lime-pepper dip.",
+    "emoji": "🥩"
+  },
+  {
+    "id": "food-03",
+    "name": "Kuy Teav Phnom Penh",
+    "category": "food",
+    "price": 3,
+    "available": true,
+    "rating": 4.7,
+    "description": "Classic Cambodian rice noodle soup with minced pork, shrimp, and crispy garlic.",
+    "emoji": "🍜"
+  },
+  {
+    "id": "food-04",
+    "name": "Teriyaki Chicken Bento",
+    "category": "food",
+    "price": 4,
+    "available": false,
+    "rating": 4.6,
+    "description": "Grilled glazed chicken thigh with steamed rice and sesame greens.",
+    "emoji": "🍱"
+  },
+  {
+    "id": "drink-01",
+    "name": "Iced Latte",
+    "category": "drinks",
+    "price": 2.5,
+    "available": true,
+    "rating": 4.9,
+    "description": "Double-shot espresso poured over chilled fresh milk and ice.",
+    "emoji": "🧋"
+  },
+  {
+    "id": "drink-02",
+    "name": "Passion Fruit Soda",
+    "category": "drinks",
+    "price": 2,
+    "available": true,
+    "rating": 4.8,
+    "description": "Refreshing sparkling soda blended with fresh Cambodian passion fruit.",
+    "emoji": "🍹"
+  },
+  {
+    "id": "drink-03",
+    "name": "Matcha Green Tea Latte",
+    "category": "drinks",
+    "price": 2.75,
+    "available": true,
+    "rating": 4.7,
+    "description": "Ceremonial-grade matcha whisked with creamy milk over ice.",
+    "emoji": "🍵"
+  },
+  {
+    "id": "dessert-01",
+    "name": "Mango Sticky Rice",
+    "category": "dessert",
+    "price": 2.5,
+    "available": true,
+    "rating": 4.9,
+    "description": "Sweet ripe mango slices with warm coconut-infused glutinous rice.",
+    "emoji": "🥭"
+  },
+  {
+    "id": "dessert-02",
+    "name": "Chocolate Croissant",
+    "category": "dessert",
+    "price": 2.25,
+    "available": true,
+    "rating": 4.6,
+    "description": "Flaky golden French pastry filled with rich dark chocolate.",
+    "emoji": "🥐"
+  },
+  {
+    "id": "dessert-03",
+    "name": "Coconut Flan",
+    "category": "dessert",
+    "price": 1.75,
+    "available": true,
+    "rating": 4.7,
+    "description": "Silky caramel custard infused with fresh coconut cream.",
+    "emoji": "🍮"
+  }
+]

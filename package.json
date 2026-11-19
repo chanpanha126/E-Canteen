@@ -1,0 +1,17 @@
+{
+  "name": "e-canteen",
+  "version": "1.0.0",
+  "description": "AUPP E-Canteen Digital Ordering System (Group 8)",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "bakong-khqr": "^1.0.20",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "qrcode": "^1.5.4"
+  }
+}

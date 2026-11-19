@@ -1,0 +1,53 @@
+[
+  {
+    "orderId": 101,
+    "table": 1,
+    "queueNumber": "A-001",
+    "items": [
+      {
+        "name": "Chicken Fried Rice",
+        "qty": 1,
+        "price": 3.5
+      }
+    ],
+    "totalAmount": 3.5,
+    "paymentMd5": "e985bb909ea3490b3420d256c8080f63",
+    "customerNote": "",
+    "status": "ready",
+    "createdAt": "2026-11-19T03:48:24.720Z"
+  },
+  {
+    "orderId": 102,
+    "table": 4,
+    "queueNumber": "A-002",
+    "items": [
+      {
+        "name": "Beef Lok Lak",
+        "qty": 1,
+        "price": 4.5
+      }
+    ],
+    "totalAmount": 4.5,
+    "paymentMd5": "abd2f693c37d47f28cdaed471dd52037",
+    "customerNote": "",
+    "status": "ready",
+    "createdAt": "2026-11-19T03:49:36.968Z"
+  },
+  {
+    "orderId": 103,
+    "table": 10,
+    "queueNumber": "A-003",
+    "items": [
+      {
+        "name": "Coconut Flan",
+        "qty": 1,
+        "price": 1.75
+      }
+    ],
+    "totalAmount": 1.75,
+    "paymentMd5": "c07db09bf0a05b5056ba67ffe6fa634c",
+    "customerNote": "",
+    "status": "ready",
+    "createdAt": "2026-11-19T03:50:04.669Z"
+  }
+]
