@@ -33,10 +33,10 @@ export function updateMenuAvailability(itemId, available) {
   });
 }
 
-export function generateKhqrPayment({ amount, currency = 'USD', useDemoAmount = false }) {
+export function generateKhqrPayment({ amount, currency = 'USD' }) {
   return request('/api/payments/khqr/generate', {
     method: 'POST',
-    body: JSON.stringify({ amount, currency, useDemoAmount }),
+    body: JSON.stringify({ amount, currency }),
   });
 }
 

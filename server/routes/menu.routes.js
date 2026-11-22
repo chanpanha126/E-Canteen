@@ -3,16 +3,16 @@ const { getMenuItems, saveMenuItems } = require('../services/store');
 
 const router = express.Router();
 
-const ALLOWED_CATEGORIES = new Set(['food', 'dessert', 'drinks']);
+const ALLOWED_CATEGORIES = ['food', 'dessert', 'drinks'];
 
-// GET /api/menu (optional ?category=food|dessert|drinks)
+// GET /api/menu — returns all menu items (or filters by ?category=food|dessert|drinks)
 router.get('/', (req, res) => {
   const { category } = req.query;
   const allItems = getMenuItems();
 
   if (category && category !== 'all') {
     const normalized = String(category).toLowerCase();
-    if (!ALLOWED_CATEGORIES.has(normalized)) {
+    if (!ALLOWED_CATEGORIES.includes(normalized)) {
       return res.status(400).json({ error: 'Invalid category filter.' });
     }
     return res.json({
@@ -23,7 +23,7 @@ router.get('/', (req, res) => {
   return res.json({ items: allItems });
 });
 
-// PATCH /api/menu/:id/availability
+// PATCH /api/menu/:id/availability — toggles whether an item is available or sold out
 router.patch('/:id/availability', (req, res) => {
   const { id } = req.params;
   const { available } = req.body;

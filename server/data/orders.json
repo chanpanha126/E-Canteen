@@ -49,5 +49,22 @@
     "customerNote": "",
     "status": "ready",
     "createdAt": "2026-11-19T03:50:04.669Z"
+  },
+  {
+    "orderId": 104,
+    "table": 7,
+    "queueNumber": "A-004",
+    "items": [
+      {
+        "name": "Beef Lok Lak",
+        "qty": 1,
+        "price": 4.5
+      }
+    ],
+    "totalAmount": 4.5,
+    "paymentMd5": "b0bdc70022010486cf8f4a25b2c37fcb",
+    "customerNote": "",
+    "status": "ready",
+    "createdAt": "2026-11-22T02:18:05.649Z"
   }
 ]

@@ -1,11 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
+// File paths for our JSON "database" files
 const MENU_PATH = path.join(__dirname, '../data/menu.json');
 const ORDERS_PATH = path.join(__dirname, '../data/orders.json');
 
 /**
- * Safely reads and parses a JSON file, returning fallback if missing or empty.
+ * Reads a JSON file from disk and parses it into a JS array/object.
+ * Returns `fallback` if the file does not exist or is empty.
  */
 function readJson(filePath, fallback) {
   try {
@@ -21,7 +23,7 @@ function readJson(filePath, fallback) {
 }
 
 /**
- * Safely writes data formatted as pretty JSON to disk.
+ * Converts JS data into pretty-formatted JSON text and saves it to disk.
  */
 function writeJson(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n', 'utf8');
@@ -44,16 +46,19 @@ function saveOrders(orders) {
 }
 
 /**
- * Generates the next sequential orderId (starting at 101) and queueNumber ("A-001", "A-002", ...).
+ * Generates the next orderId (101, 102, ...) and queueNumber ("A-001", "A-002", ...).
  */
 function getNextOrderIdentifiers(existingOrders) {
-  const maxOrderId = existingOrders.reduce(
-    (max, order) => (order.orderId > max ? order.orderId : max),
-    100
-  );
+  let maxOrderId = 100;
+  for (const order of existingOrders) {
+    if (order.orderId > maxOrderId) {
+      maxOrderId = order.orderId;
+    }
+  }
+
   const nextOrderId = maxOrderId + 1;
-  const sequenceIndex = existingOrders.length + 1;
-  const queueNumber = `A-${String(sequenceIndex).padStart(3, '0')}`;
+  const nextNumber = String(existingOrders.length + 1).padStart(3, '0');
+  const queueNumber = `A-${nextNumber}`;
 
   return { orderId: nextOrderId, queueNumber };
 }

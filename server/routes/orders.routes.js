@@ -7,28 +7,33 @@ const {
 
 const router = express.Router();
 
-const ALLOWED_STATUSES = new Set(['preparing', 'ready', 'completed']);
+const ALLOWED_STATUSES = ['preparing', 'ready', 'completed'];
 
+/**
+ * Calculates summary statistics (revenue, order status counts, top items)
+ * for the Staff Dashboard.
+ */
 function computeAnalytics(orders) {
   let totalRevenue = 0;
   let preparingCount = 0;
   let readyCount = 0;
   let completedCount = 0;
-  const itemCounts = new Map();
+  const itemCounts = {};
 
   for (const order of orders) {
     totalRevenue += Number(order.totalAmount || 0);
+
     if (order.status === 'preparing') preparingCount += 1;
     else if (order.status === 'ready') readyCount += 1;
     else if (order.status === 'completed') completedCount += 1;
 
     for (const item of order.items || []) {
-      const prev = itemCounts.get(item.name) || 0;
-      itemCounts.set(item.name, prev + Number(item.qty || 0));
+      const prev = itemCounts[item.name] || 0;
+      itemCounts[item.name] = prev + Number(item.qty || 0);
     }
   }
 
-  const topItems = Array.from(itemCounts.entries())
+  const topItems = Object.entries(itemCounts)
     .map(([name, qty]) => ({ name, qty }))
     .sort((a, b) => b.qty - a.qty)
     .slice(0, 5);
@@ -43,7 +48,7 @@ function computeAnalytics(orders) {
   };
 }
 
-// GET /api/orders — all orders + daily analytics summary for staff panel & order history
+// GET /api/orders — returns all orders (newest first) + analytics summary
 router.get('/', (req, res) => {
   const orders = getOrders();
   const sorted = [...orders].sort((a, b) => b.orderId - a.orderId);
@@ -53,7 +58,7 @@ router.get('/', (req, res) => {
   });
 });
 
-// POST /api/orders — create order & assign queueNumber
+// POST /api/orders — validates cart items, creates order, and assigns queueNumber
 router.post('/', (req, res) => {
   const { table, items, paymentMd5 = null, customerNote = '' } = req.body || {};
 
@@ -88,11 +93,11 @@ router.post('/', (req, res) => {
     });
   }
 
-  const totalAmount = Number(
-    normalizedItems
-      .reduce((sum, item) => sum + item.price * item.qty, 0)
-      .toFixed(2)
-  );
+  let totalAmount = 0;
+  for (const item of normalizedItems) {
+    totalAmount += item.price * item.qty;
+  }
+  totalAmount = Number(totalAmount.toFixed(2));
 
   const orders = getOrders();
   const { orderId, queueNumber } = getNextOrderIdentifiers(orders);
@@ -123,7 +128,7 @@ router.post('/', (req, res) => {
   });
 });
 
-// GET /api/orders/:orderId/status — lightweight polling endpoint for Fetch API
+// GET /api/orders/:orderId/status — lightweight polling endpoint for customer screen
 router.get('/:orderId/status', (req, res) => {
   const orderId = Number(req.params.orderId);
   if (!Number.isInteger(orderId)) {
@@ -144,7 +149,7 @@ router.get('/:orderId/status', (req, res) => {
   });
 });
 
-// PATCH /api/orders/:orderId/status — update order status ("preparing" | "ready" | "completed")
+// PATCH /api/orders/:orderId/status — updates order status ("preparing" | "ready" | "completed")
 router.patch('/:orderId/status', (req, res) => {
   const orderId = Number(req.params.orderId);
   const { status } = req.body || {};
@@ -153,7 +158,7 @@ router.patch('/:orderId/status', (req, res) => {
     return res.status(400).json({ error: 'Invalid orderId.' });
   }
 
-  if (!ALLOWED_STATUSES.has(status)) {
+  if (!ALLOWED_STATUSES.includes(status)) {
     return res.status(400).json({
       error: 'Invalid status. Allowed values: preparing, ready, completed.',
     });

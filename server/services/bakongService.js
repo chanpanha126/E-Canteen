@@ -1,88 +1,57 @@
-const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { BakongKHQR, IndividualInfo, khqrData } = require('bakong-khqr');
 
+// Official NBC Bakong endpoint used to check if a KHQR payment was received
 const BAKONG_VERIFY_URL = 'https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5';
 
-// In-memory store for generated KHQR sessions and confirmed transactions
-const generatedTransactions = new Map();
-const paidTransactions = new Set();
-
 /**
- * Builds a deterministic fallback KHQR-style payload if the account config cannot be encoded by bakong-khqr.
+ * Generates a real Individual Bakong KHQR payload and scannable QR image
+ * for the exact total food amount using your personal ABA/Bakong account.
  */
-function createFallbackQr({ accountId, accountName, amount, currency }) {
-  const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const qrString = `00020101021229180014${accountId}5303${currency === 'KHR' ? '116' : '840'}5404${amount}5802KH59${accountName}6304MOCK`;
-  const md5 = crypto.createHash('md5').update(`${qrString}:${nonce}`).digest('hex');
-  return { qrString, md5 };
-}
-
-/**
- * Generates a real Individual Bakong KHQR payload + scannable QR data URL for a Personal ABA/Bakong account.
- */
-async function generateKhqr({ amount, currency = 'USD', useDemoAmount = false }) {
-  const accountId = (process.env.BAKONG_ACCOUNT_ID || 'chan_panha@aba').trim();
-  const accountName = (process.env.BAKONG_ACCOUNT_NAME || 'CHAN PANHA').trim();
+async function generateKhqr({ amount, currency = 'USD' }) {
+  const accountId = (process.env.BAKONG_ACCOUNT_ID || '').trim();
+  const accountNumber = (process.env.ABA_ACCOUNT_NUMBER || '').replace(/\s+/g, '');
+  const acquiringBank = (process.env.BAKONG_ACQUIRING_BANK || 'ABA Bank').trim();
+  const accountName = (process.env.BAKONG_ACCOUNT_NAME || '').trim();
   const merchantCity = (process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh').trim();
 
-  const demoKhr = Number(process.env.DEMO_TEST_AMOUNT_KHR || 100);
-  const finalCurrency = useDemoAmount ? 'KHR' : currency.toUpperCase() === 'KHR' ? 'KHR' : 'USD';
-  const rawAmount = useDemoAmount ? demoKhr : Number(amount);
-  const finalAmount =
-    finalCurrency === 'KHR'
-      ? Math.max(100, Math.round(rawAmount))
-      : Number(Math.max(0.01, rawAmount).toFixed(2));
-
-  let qrString = '';
-  let md5 = '';
-  let isMockFallback = false;
-
-  try {
-    const khqrCurrency =
-      finalCurrency === 'KHR' ? khqrData.currency.khr : khqrData.currency.usd;
-
-    const info = new IndividualInfo(accountId, accountName, merchantCity, {
-      currency: khqrCurrency,
-      amount: finalAmount,
-      expirationTimestamp: Date.now() + 15 * 60 * 1000,
-    });
-
-    const khqr = new BakongKHQR();
-    const result = khqr.generateIndividual(info);
-
-    if (result && result.status && result.status.code === 0 && result.data) {
-      qrString = result.data.qr;
-      md5 = result.data.md5;
-    } else {
-      throw new Error(result?.status?.message || 'KHQR generation rejected');
-    }
-  } catch (err) {
-    console.warn('bakong-khqr fallback triggered:', err.message);
-    isMockFallback = true;
-    const fallback = createFallbackQr({
-      accountId,
-      accountName,
-      amount: finalAmount,
-      currency: finalCurrency,
-    });
-    qrString = fallback.qrString;
-    md5 = fallback.md5;
+  if (!accountId || !accountName) {
+    throw new Error('Missing BAKONG_ACCOUNT_ID or BAKONG_ACCOUNT_NAME in .env');
   }
 
+  // Format amount to match the selected currency (2 decimals for USD, whole number for KHR)
+  const finalCurrency = currency.toUpperCase() === 'KHR' ? 'KHR' : 'USD';
+  const finalAmount =
+    finalCurrency === 'KHR'
+      ? Math.round(Number(amount))
+      : Number(Number(amount).toFixed(2));
+
+  const khqrCurrency =
+    finalCurrency === 'KHR' ? khqrData.currency.khr : khqrData.currency.usd;
+
+  // Build Bakong Individual KHQR info (expires in 15 minutes)
+  const info = new IndividualInfo(accountId, accountName, merchantCity, {
+    accountInformation: accountNumber || undefined,
+    acquiringBank: acquiringBank || undefined,
+    currency: khqrCurrency,
+    amount: finalAmount,
+    expirationTimestamp: Date.now() + 15 * 60 * 1000,
+  });
+
+  const khqr = new BakongKHQR();
+  const result = khqr.generateIndividual(info);
+
+  if (!result || !result.status || result.status.code !== 0 || !result.data) {
+    throw new Error(result?.status?.message || 'Failed to generate Bakong KHQR');
+  }
+
+  const qrString = result.data.qr;
+  const md5 = result.data.md5;
+
+  // Convert the EMVCo KHQR string into a PNG image Data URL for <img src="...">
   const qrImageDataUrl = await QRCode.toDataURL(qrString, {
     width: 320,
     margin: 2,
-    color: {
-      dark: '#111827',
-      light: '#FFFFFF',
-    },
-  });
-
-  generatedTransactions.set(md5, {
-    amount: finalAmount,
-    currency: finalCurrency,
-    createdAt: Date.now(),
   });
 
   return {
@@ -93,29 +62,24 @@ async function generateKhqr({ amount, currency = 'USD', useDemoAmount = false })
     currency: finalCurrency,
     accountName,
     accountId,
-    isDemoAmount: Boolean(useDemoAmount),
-    isMockFallback,
+    accountNumber,
     hasLiveToken: Boolean(process.env.BAKONG_DEV_TOKEN && process.env.BAKONG_DEV_TOKEN.trim()),
   };
 }
 
 /**
- * Verifies payment status by MD5 via NBC Bakong API (if BAKONG_DEV_TOKEN is configured)
- * or confirms simulation/mock mode while returning the exact Bakong response contract.
+ * Checks whether a Bakong KHQR payment (identified by its MD5 hash) is completed.
+ * Uses the NBC Bakong API when BAKONG_DEV_TOKEN is set in .env,
+ * or returns confirmed immediately when forceSimulate is true.
  */
-async function verifyTransactionByMd5({ md5, amount, currency, forceSimulate = false }) {
-  const recorded = generatedTransactions.get(md5);
-  const resolvedAmount = amount !== undefined ? Number(amount) : recorded?.amount ?? 0;
-  const resolvedCurrency = currency || recorded?.currency || 'USD';
-
-  if (forceSimulate || paidTransactions.has(md5)) {
-    paidTransactions.add(md5);
+async function verifyTransactionByMd5({ md5, amount, currency = 'USD', forceSimulate = false }) {
+  if (forceSimulate) {
     return {
       responseCode: 0,
       data: {
         md5,
-        amount: resolvedAmount,
-        currency: resolvedCurrency,
+        amount: Number(amount || 0),
+        currency,
       },
     };
   }
@@ -125,7 +89,7 @@ async function verifyTransactionByMd5({ md5, amount, currency, forceSimulate = f
     return {
       responseCode: 1,
       data: null,
-      message: 'Awaiting payment confirmation (configure BAKONG_DEV_TOKEN or use Demo Simulate).',
+      message: 'Waiting for payment...',
     };
   }
 
@@ -142,28 +106,23 @@ async function verifyTransactionByMd5({ md5, amount, currency, forceSimulate = f
     const payload = await response.json();
 
     if (payload && payload.responseCode === 0 && payload.data) {
-      paidTransactions.add(md5);
       return {
         responseCode: 0,
-        data: {
-          md5: payload.data.md5 || md5,
-          amount: Number(payload.data.amount ?? resolvedAmount),
-          currency: payload.data.currency || resolvedCurrency,
-        },
+        data: payload.data,
       };
     }
 
     return {
       responseCode: payload?.responseCode ?? 1,
       data: null,
-      message: payload?.responseMessage || 'Transaction pending.',
+      message: payload?.responseMessage || 'Waiting for payment...',
     };
   } catch (err) {
     console.error('Bakong verification request error:', err.message);
     return {
       responseCode: 1,
       data: null,
-      message: 'Unable to reach Bakong API; retry or use Demo Simulate.',
+      message: 'Unable to reach Bakong API.',
     };
   }
 }

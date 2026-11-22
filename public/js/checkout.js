@@ -74,20 +74,17 @@ async function loadKhqrCode() {
   const accountLabel = document.getElementById('khqr-account-display');
   const md5Label = document.getElementById('khqr-md5-display');
   const modeStatus = document.getElementById('khqr-mode-status');
-  const demoToggle = document.getElementById('khqr-demo-amount-toggle');
 
   stopKhqrVerificationPolling();
   if (qrImg) qrImg.classList.add('hidden');
   if (qrLoading) qrLoading.classList.remove('hidden');
 
   const totalUsd = getCartTotal();
-  const useDemoAmount = Boolean(demoToggle?.checked);
 
   try {
     const session = await generateKhqrPayment({
       amount: totalUsd,
       currency: 'USD',
-      useDemoAmount,
     });
 
     currentKhqrSession = session;
@@ -99,13 +96,12 @@ async function loadKhqrCode() {
     if (qrLoading) qrLoading.classList.add('hidden');
 
     if (amountLabel) {
-      amountLabel.textContent =
-        session.currency === 'KHR'
-          ? `${session.amount.toLocaleString()} KHR (Demo Test)`
-          : `$${Number(session.amount).toFixed(2)} USD`;
+      amountLabel.textContent = `$${Number(session.amount).toFixed(2)} USD`;
     }
     if (accountLabel) {
-      accountLabel.textContent = `${session.accountName} (${session.accountId})`;
+      accountLabel.textContent = session.accountNumber
+        ? `${session.accountName} (${session.accountNumber})`
+        : `${session.accountName} (${session.accountId})`;
     }
     if (md5Label) {
       md5Label.textContent = `MD5: ${session.md5}`;
@@ -168,10 +164,6 @@ export function initCheckoutEvents() {
   document
     .getElementById('close-khqr-btn')
     ?.addEventListener('click', closeKhqrModal);
-
-  document
-    .getElementById('khqr-demo-amount-toggle')
-    ?.addEventListener('change', loadKhqrCode);
 
   document
     .getElementById('simulate-khqr-pay-btn')
