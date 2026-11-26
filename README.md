@@ -1,251 +1,186 @@
-# AUPP E-Canteen (Group 8) — Complete Technical & Team Guide
+# AUPP E-Canteen
 
-**Project Title:** E-Canteen  
-**Team Members:** CHAN Panha • CHENG Mengsrun • SAY Kimlong  
-**Stack:**
-- **Frontend:** Plain HTML5 + Tailwind CSS (CDN) + Vanilla JavaScript (`fetch()`, DOM manipulation, `localStorage`, `Web Notifications API`)
-- **Backend:** Node.js + Express.js + Real Individual Bakong KHQR (`bakong-khqr`, `qrcode`)
-- **Database:** JSON file storage ([server/data/menu.json](server/data/menu.json) & [server/data/orders.json](server/data/orders.json)) — no database installation needed
+A QR ordering system for the AUPP canteen. You scan the QR code on your table, pick your food, pay with Bakong KHQR, and get a notification when your order is ready. No queue at the counter, no shouting order numbers.
+
+**INFO 251 Web Development II, Group 8**
+CHAN Panha · CHENG Mengsrun · SAY Kimlong
 
 ---
 
-## Quick Start (How to Run on Any Laptop)
+## Running it
 
-1. Make sure **Node.js** is installed (`node -v`).
-2. Install dependencies once:
-   ```bash
-   npm install
-   ```
-3. Copy `.env.example` to `.env` if `.env` does not exist yet, and fill in your Personal ABA/Bakong ID:
-   ```env
-   PORT=3000
-   BAKONG_ACCOUNT_ID=your_name@aba
-   BAKONG_ACCOUNT_NAME=YOUR NAME
-   BAKONG_MERCHANT_CITY=Phnom Penh
-   BAKONG_DEV_TOKEN=
-   DEMO_TEST_AMOUNT_KHR=100
-   ```
-4. Start the server:
-   ```bash
-   npm run dev
-   ```
-5. Open Chrome:
-   - **Customer QR Menu (Table 7):** `http://localhost:3000/?table=7`
-   - **Staff Kitchen & Demo Panel:** `http://localhost:3000/staff.html`
+You need Node.js (we used v22).
+
+```bash
+npm install
+cp .env.example .env     # then fill in your own Bakong / ABA details
+npm run dev
+```
+
+Then open:
+
+- Customer menu for table 7: http://localhost:3000/?table=7
+- Staff panel: http://localhost:3000/staff.html
+
+To scan the table QR from a phone, the phone has to be on the same Wi-Fi as the laptop. In the staff panel, change the base URL from `localhost` to the laptop's IP address and generate the QR code again.
+
+### `.env` settings
+
+| Key | What it's for |
+|---|---|
+| `PORT` | Server port (default 3000) |
+| `BAKONG_ACCOUNT_ID` | Your personal Bakong ID, e.g. `name@aba` |
+| `BAKONG_ACCOUNT_NAME`, `BAKONG_MERCHANT_CITY` | Shown on the KHQR code |
+| `ABA_ACCOUNT_NUMBER`, `BAKONG_ACQUIRING_BANK`, `ABA_P2P_TAG` | Optional extra details for ABA |
+| `BAKONG_DEV_TOKEN` | Token from https://api-bakong.nbc.gov.kh. With it, payments are confirmed automatically. Without it, use the "Simulate Payment" button. |
+
+Never commit `.env`. It's already in `.gitignore`.
 
 ---
 
-## Complete Folder & File Structure
+## What it does
 
-```text
+**Customer page (`index.html`)**
+- Reads the table number from the URL (`?table=7`), so one page works for every table.
+- Loads the menu from the API, with category tabs and live search. Sold-out items can't be added.
+- Food cards with photos (a grey placeholder shows if a photo is missing). Tap a card to open a details sheet with a bigger photo, the description and a − / + quantity picker; the round **+** button adds one straight away.
+- Cart is saved in `localStorage`, so a refresh doesn't lose it. Each menu card shows how many of that item are already in the cart. On phones there's a bottom bar with Menu, Orders and Cart.
+- The checkout form checks the table number (1–99), the note (120 characters max, no `<` or `>`), and that the cart isn't empty. Errors show under each field.
+- Payment uses a real Bakong KHQR code for the exact cart total.
+- After paying, a tracker shows Paid → Preparing → Ready → Picked up. It checks the order status every 3 seconds, and when the food is ready it plays a chime and sends a browser notification.
+
+**Staff panel (`staff.html`)**
+- Live order queue that refreshes every 4 seconds, with filter tabs (All / Preparing / Ready for Pickup / Picked Up) and a colour for each status.
+- Each order only shows its next step: **Food Done – Notify Customer** while it's cooking, then **Picked Up** (or **Back to Preparing** if clicked by mistake).
+- **Edit** an order (status and note) in a validated form. This sends PUT.
+- **Delete** an order after confirming in the page. This sends DELETE.
+- Sales numbers, popular items, sold-out toggles, and a QR code generator for each table.
+
+If the server can't be reached, both pages say so and show a Retry button instead of failing silently.
+
+---
+
+## How it fits together
+
+```
+Browser (public/)                     Express server (server/)              Outside
+─────────────────                     ────────────────────────              ───────
+index.html / staff.html
+  js/menu.js, cart.js, ...
+  js/api.js  ── fetch() ──────────▶   routes/*.js  ──▶ services/store.js ──▶ data/*.json
+                                                   └─▶ services/bakongService.js ──▶ NBC Bakong API
+             ◀────────── JSON ─────
+```
+
+Every request from the pages goes through `public/js/api.js`, a small wrapper around `fetch()` with `async/await`. It turns HTTP errors and network failures into readable messages. The server checks the input, reads or writes the JSON files, talks to Bakong when needed, and sends back JSON.
+
+**Public API:** NBC Bakong. We use the `bakong-khqr` package to build a real KHQR for a personal account (no merchant registration needed) and Bakong's `check_transaction_by_md5` endpoint to confirm the payment.
+
+**Our own REST API:** Bakong doesn't let us store orders, so we wrote a small Express API for the menu and orders. The guidelines allow a mock API for the POST/PUT/DELETE part.
+
+### API routes
+
+| Method | Route | Used for |
+|---|---|---|
+| GET | `/api/menu` | Menu items (optional `?category=food\|drinks\|dessert`) |
+| PATCH | `/api/menu/:id/availability` | Mark an item sold out or available |
+| POST | `/api/payments/khqr/generate` | Create a KHQR code and its MD5 |
+| POST | `/api/payments/khqr/verify` | Check whether that MD5 has been paid |
+| GET | `/api/orders` | All orders plus sales numbers (staff panel) |
+| POST | `/api/orders` | Place an order after payment, returns queue number like `A-001` |
+| GET | `/api/orders/:orderId/status` | Status check (customer tracker polls this) |
+| PATCH | `/api/orders/:orderId/status` | Quick status change from the staff buttons |
+| PUT | `/api/orders/:orderId` | Edit an order's status and note |
+| DELETE | `/api/orders/:orderId` | Remove an order |
+
+Bad input gets a `400` and a missing order gets a `404`, both with a JSON `{ "error": "..." }` message.
+
+---
+
+## Files
+
+```
 E-Canteen/
-│
-├── package.json                  # Lists project packages (express, cors, dotenv, bakong-khqr, qrcode) and scripts
-├── .env                          # Local secret config (Port, Personal ABA Bakong ID, optional Bakong Dev Token)
-├── .env.example                  # Template of .env safe to commit to GitHub
-├── .gitignore                    # Ignores node_modules/, .env, .DS_Store
-├── README.md                     # This team guide & technical documentation
-│
-├── public/                       # FRONTEND (Runs in Chrome / Phone Browser)
-│   ├── index.html                # Customer Page: Menu, Cart Drawer, KHQR Modal, Order Status Banner, History
-│   ├── staff.html                # Staff Page: Live Order Queue, "Mark Ready" button, Analytics, Table QR Generator
+├── public/                  frontend (runs in the browser)
+│   ├── index.html           customer page
+│   ├── staff.html           staff panel
+│   ├── css/styles.css       our own styles (Tailwind CDN handles layout utilities)
+│   ├── images/menu/         food photos, named after the menu item id (food-01.jpg, ...)
+│   ├── images/brand/        AUPP logo
 │   └── js/
-│       ├── api.js                # Shared fetch() + async/await REST API client
-│       ├── menu.js               # Fetches menu items, filters by category/search, renders menu cards
-│       ├── cart.js               # Reads ?table=7 from URL, manages cart in localStorage (+ / - quantity, total)
-│       ├── checkout.js           # Opens Bakong KHQR modal, checks payment status, creates order
-│       ├── tracking.js           # Polls order status every 3s via Fetch API & triggers Web Notification alert
-│       └── staff.js              # Logic for staff.html (mark ready, toggle sold-out, generate table QR codes)
-│
-└── server/                       # BACKEND (Runs in Node.js)
-    ├── index.js                  # Express entry point: serves public/ static files and /api/* routes on port 3000
-    ├── data/
-    │   ├── menu.json             # Seeded menu items across food, drinks, and dessert
-    │   └── orders.json           # JSON persistence for placed customer orders
-    ├── routes/
-    │   ├── menu.routes.js        # GET /api/menu, PATCH /api/menu/:id/availability
-    │   ├── khqr.routes.js        # POST /api/payments/khqr/generate, POST /api/payments/khqr/verify
-    │   └── orders.routes.js      # POST /api/orders, GET/PATCH /api/orders/:orderId/status, GET /api/orders
-    └── services/
-        ├── store.js              # Reads/writes menu.json & orders.json and assigns orderId & queueNumber
-        └── bakongService.js      # Uses bakong-khqr & qrcode to create real KHQR + MD5 verification
+│       ├── main.js          starts the customer page (imports the modules below)
+│       ├── api.js           all fetch() calls
+│       ├── ui.js            shared helpers: toasts, escaping HTML, form errors
+│       ├── menu.js          menu cards, categories, search, food details sheet
+│       ├── cart.js          cart, table number, order history
+│       ├── checkout.js      checkout form validation, KHQR payment
+│       ├── tracking.js      order status polling, notifications
+│       └── staff.js         staff queue, filters, edit/delete
+└── server/                  backend (runs in Node.js)
+    ├── index.js             Express setup, serves public/ and /api
+    ├── routes/              menu, orders, khqr routes
+    ├── services/            store.js (JSON files), bakongService.js (Bakong)
+    └── data/                menu.json, orders.json
 ```
 
 ---
 
-## PART 1: The Big Picture — How Data Flows Step-by-Step
+## JavaScript features we used
 
-- **Frontend (`public/` folder):** Runs inside the student's web browser (Chrome/Safari). It cannot directly access files on the server's hard drive. Instead, whenever it needs data, it uses **`fetch()`** to send an HTTP request (`GET`, `POST`, or `PATCH`) to the Backend.
-- **Backend (`server/` folder):** Runs in Node.js on port `3000`. It listens for `fetch()` requests, reads or updates [server/data/menu.json](server/data/menu.json) and [server/data/orders.json](server/data/orders.json), talks to Bakong KHQR, and replies with **JSON** data.
-
-```text
-[Student Phone Browser]                     [Node.js Express Server]
-       |                                               |
-       |--- 1. Opens /?table=7 ----------------------->| Serves public/index.html
-       |--- 2. fetch('GET /api/menu') ---------------->| Reads server/data/menu.json
-       |<-- Returns JSON list of 10 food/drink items --|
-       |                                               |
-       | (Student adds items to Cart in localStorage)  |
-       |                                               |
-       |--- 3. fetch('POST /api/payments/khqr/generate') -> Creates real Bakong QR + MD5
-       |<-- Returns QR image + MD5 hash ---------------|
-       |                                               |
-       |--- 4. fetch('POST /api/payments/khqr/verify') ---> Checks if MD5 is paid
-       |<-- Returns { responseCode: 0 } ---------------|
-       |                                               |
-       |--- 5. fetch('POST /api/orders') ------------->| Saves order to orders.json
-       |<-- Returns { orderId: 101, queueNumber: "A-001", status: "preparing" }
-       |                                               |
-       |--- 6. Every 3s: fetch('GET /api/orders/101/status') -> Checks current status
-       |<-- Returns { status: "ready" } (after Staff clicks "Mark Ready")
-       |                                               |
-       |---> 7. Browser fires Web Notification: "Queue A-001 is ready for pickup!"
-```
+- **DOM manipulation:** menu cards, cart items and order cards are built with template literals and inserted with `innerHTML`. Toasts use `createElement`.
+- **Events:** clicks are handled on parent elements and use `data-*` attributes to tell buttons apart; `submit` and `input` events drive the forms; `keydown` lets Esc close popups. `cart.js` sends a custom `cart:updated` event and `menu.js` listens for it.
+- **Async:** `async/await` with `try/catch` around every `fetch()`; `setInterval` for polling.
+- **ES6+:** modules (`import`/`export`), arrow functions, `const`/`let`, template literals, destructuring, spread, optional chaining (`?.`), `Array` methods like `map`, `filter`, `reduce`, `find`.
+- **Browser APIs:** `localStorage`, `URLSearchParams`, the Notifications API, Web Audio for the chime.
 
 ---
 
-## PART 2: Role 1 — Digital Menu, QR Table Detection & Shopping Cart
+## Who did what
 
-**Assigned to:** Teammate 1 (*e.g., CHENG Mengsrun*)  
-**Files Owned:**
-- [public/index.html](public/index.html)
-- [public/js/menu.js](public/js/menu.js)
-- [public/js/cart.js](public/js/cart.js)
-- [server/data/menu.json](server/data/menu.json)
-
-### Task 1.1: Detect the Table Number from the QR Code URL
-- **WHAT it does:** When a student scans a table QR code, it opens `http://localhost:3000/?table=7`. Your code reads `7` from the URL and displays `Table #7` in the top navigation bar and inside the cart.
-- **WHY we do it this way:** Instead of building 20 separate HTML pages for 20 canteen tables, **one single webpage** handles every table by reading the `?table=` query parameter. Saving it in `localStorage` ensures a page refresh keeps the student's table number.
-- **HOW it works (`initTableNumber()` in [public/js/cart.js](public/js/cart.js)):**
-  1. `window.location.search` reads the query string (e.g., `"?table=7"`).
-  2. `new URLSearchParams(window.location.search).get('table')` extracts `"7"`.
-  3. Validates it is a positive integer (`Number.isInteger(urlTable) && urlTable > 0`).
-  4. Saves it using `localStorage.setItem('ecanteen_table', String(urlTable))`.
-  5. `renderTableBadge()` updates `<span id="table-badge-number">` to `#7`.
-
-### Task 1.2: Fetch the Menu & Render HTML Cards (DOM Manipulation)
-- **WHAT it does:** Loads all canteen dishes, drinks, and desserts from the backend server and dynamically creates the visual menu cards on the page.
-- **WHY we do it this way:** If the canteen runs out of an item, staff can mark it "Sold Out" on the server and every student immediately sees the updated availability via `GET /api/menu`.
-- **HOW it works (`loadMenu()` & `renderMenu()` in [public/js/menu.js](public/js/menu.js)):**
-  1. `loadMenu()` calls `await fetchMenu('all')` (`fetch('/api/menu')`).
-  2. Stores the returned `items` array in `allMenuItems`.
-  3. `renderMenu()` filters `allMenuItems` by `activeCategory` and `searchQuery`.
-  4. Maps each matching item to an `<article>` HTML string showing emoji, price, rating, and `Available` / `Sold Out` badge (adding `disabled` to the button when `available === false`).
-  5. Injects the cards into `#menu-grid` using `grid.innerHTML = ...` with no page reload.
-
-### Task 1.3: Category Tabs & Live Search Filtering (Event Handling)
-- **WHAT it does:** Filters the menu instantly when clicking **All Menu**, **Food**, **Drinks & Cafe**, or **Dessert**, or typing in the search bar.
-- **WHY we do it this way:** Updating the DOM in memory is instant and satisfies the requirement for flexible UI updates without a full-page refresh.
-- **HOW it works (`initMenuEvents()` in [public/js/menu.js](public/js/menu.js)):**
-  1. Reads `btn.dataset.category` when a tab inside `#category-tabs` is clicked.
-  2. Updates `activeCategory`, highlights the active tab, and re-runs `renderMenu()`.
-  3. Listens to the `input` event on `#menu-search`, updates `searchQuery`, and re-runs `renderMenu()`.
-
-### Task 1.4: Shopping Cart State (`localStorage`), Quantity Controls & Total Calculation
-- **WHAT it does:** Lets students add items to the slide-out cart drawer, change quantities (`+` / `-`), remove items (`✕`), see the live total price, and keep their cart across refreshes.
-- **WHY we do it this way:** Saving the `cart` array in `localStorage` prevents students from losing their selected dishes if they accidentally refresh their mobile browser.
-- **HOW it works (in [public/js/cart.js](public/js/cart.js)):**
-  1. `addToCart(menuItem)` verifies `menuItem.available` is `true`, increments `qty` if the item is already in `cart`, or pushes `{ id, name, price, emoji, qty: 1 }`.
-  2. `saveCart()` serializes the array with `JSON.stringify(cart)` into `localStorage`.
-  3. `updateCartQty(itemId, delta)` adds `+1` or `-1` and filters out items whose `qty <= 0`.
-  4. `getCartTotal()` uses `.reduce((sum, item) => sum + item.price * item.qty, 0)` to compute the exact subtotal.
-  5. `renderCart()` updates `#cart-count-badge`, `#cart-items-list`, `#cart-subtotal`, and disables `#proceed-checkout-btn` when empty.
+| Member | Part |
+|---|---|
+| **CHAN Panha** | Backend: Express server, REST API, JSON storage, Bakong KHQR generation and payment verification |
+| **CHENG Mengsrun** | Customer page: menu, search, cart, checkout form and validation, order tracker, styles |
+| **SAY Kimlong** | Staff panel: order queue, filters, status buttons, edit (PUT) and delete (DELETE), table QR generator |
 
 ---
 
-## PART 3: Role 2 — Bakong KHQR Modal, Fetch API Polling, Web Notifications & Staff Dashboard
+## Photo credits
 
-**Assigned to:** Teammate 2 (*e.g., SAY Kimlong*)  
-**Files Owned:**
-- [public/js/api.js](public/js/api.js)
-- [public/js/checkout.js](public/js/checkout.js)
-- [public/js/tracking.js](public/js/tracking.js)
-- [public/staff.html](public/staff.html) & [public/js/staff.js](public/js/staff.js)
+The food photos (`food-01.jpg` to `food-10.jpg`) were collected by our team. The drink and dessert photos come from Wikimedia Commons and were resized for the menu:
 
-### Task 2.1: Shared Fetch API Helper (`async / await`)
-- **WHAT it does:** Centralizes all `fetch()` calls to the backend inside [public/js/api.js](public/js/api.js).
-- **WHY we do it this way:** Avoids repeating JSON headers and HTTP error handling across every module.
-- **HOW it works (`request(url, options)` in [public/js/api.js](public/js/api.js)):**
-  1. Calls `await fetch(url, ...)` with `'Content-Type': 'application/json'`.
-  2. Parses JSON and throws a readable `Error` whenever `!response.ok`.
+| File | Photo | Author | License |
+|---|---|---|---|
+| `drink-01.jpg` | [Ice Latte](https://www.vecteezy.com/free-png/ice-latte)|
+| `drink-02.jpg` | [Passionfruit drink](http://www.sesamenoodlebar.com/drink/item/passion-soda/) |
+| `drink-03.jpg` | [Matcha Latte im Glas](https://commons.wikimedia.org/wiki/File:Matcha_Latte_im_Glas.jpg) | Csuding | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `dessert-02.jpg` | [Pain au chocolat](https://commons.wikimedia.org/wiki/File:Pain_au_chocolat_Luc_Viatour.jpg) | Luc Viatour | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
+| `dessert-03.jpg` | [Coconut Flan](https://commons.wikimedia.org/wiki/File:Coconut_Flan.jpg) | norwichnuts | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) |
 
-### Task 2.2: Bakong KHQR Checkout Modal & Payment Verification
-- **WHAT it does:** Opens the Bakong KHQR payment popup, displays the scannable QR image + MD5 hash, checks payment confirmation, and creates the order to obtain a queue number.
-- **WHY we do it this way:** Orders only enter the kitchen queue once payment is verified (`responseCode === 0`). The **100 KHR** live demo checkbox and **Simulate Payment Confirmed (Demo)** button allow both real ABA Mobile testing and reliable class presentations.
-- **HOW it works (in [public/js/checkout.js](public/js/checkout.js)):**
-  1. `openKhqrCheckoutModal()` ensures the cart is non-empty and requests Web Notification permission on the user click.
-  2. `loadKhqrCode()` calls `POST /api/payments/khqr/generate` to receive `qrImageDataUrl` and `md5`.
-  3. Polls `POST /api/payments/khqr/verify` every 3 seconds (or verifies immediately when clicking **Simulate Payment Confirmed (Demo)**).
-  4. Once `responseCode === 0`, `finalizePaidOrder(md5)` calls `POST /api/orders`, clears the cart, saves to local order history, and starts order tracking.
-
-### Task 2.3: Real-Time Order Status Polling via Fetch API
-- **WHAT it does:** Displays the customer's **Queue Number (`A-001`)** and polls the backend every 3 seconds until status becomes `"ready"`.
-- **WHY we do it this way:** Customers see live updates without hitting browser refresh (`F5`).
-- **HOW it works (`startOrderTracking(order)` in [public/js/tracking.js](public/js/tracking.js)):**
-  1. Saves the active order in `localStorage` (`ecanteen_active_order`) so tracking automatically resumes on refresh.
-  2. Starts `pollingTimer = setInterval(pollOnce, 3000)` calling `GET /api/orders/:orderId/status`.
-  3. When `latest.status === 'ready'`, calls `clearInterval(pollingTimer)`, updates the banner to green **READY FOR PICKUP**, and triggers the alert.
-
-### Task 2.4: Browser Web Notifications API & Audio Chime
-- **WHAT it does:** Sends a native notification (`"Queue A-001 is ready for pickup!"`), plays a 2-note chime via Web Audio API, and shows an in-app toast banner.
-- **WHY we do it this way:** Alerts students even if they switch tabs while waiting, with an in-app banner + sound fallback if browser notifications are blocked.
-- **HOW it works (in [public/js/tracking.js](public/js/tracking.js)):**
-  1. `requestNotificationPermission()` runs `await Notification.requestPermission()`.
-  2. `triggerPickupReadyAlert()` plays two sine-wave tones via `AudioContext` and fires `new Notification('AUPP E-Canteen — Order Ready!', { body: 'Queue A-001 is ready for pickup!' })` when permission is `'granted'`.
-
-### Task 2.5: Canteen Staff Dashboard, Analytics & Table QR Generator
-- **WHAT it does:** Lets staff view incoming orders, click **Mark Pickup Ready 🔔**, track daily revenue & popular items, toggle sold-out menu items, and generate scannable table QR codes.
-- **WHY we do it this way:** Enables live demonstrations where clicking **Mark Pickup Ready 🔔** on one screen triggers the customer's polling and Web Notification on the other screen.
-- **HOW it works (in [public/js/staff.js](public/js/staff.js)):**
-  1. Polls `GET /api/orders` every 4 seconds and renders analytics cards + order queue.
-  2. Clicking **Mark Pickup Ready 🔔** sends `PATCH /api/orders/:orderId/status` with `{ "status": "ready" }`.
-  3. Clicking **Generate QR** creates a scannable QR code pointing to `${baseUrl}/?table=${tableNum}`.
+The AUPP logo belongs to the American University of Phnom Penh and is used here only for this class project.
 
 ---
 
-## PART 4: Role 3 — Backend Express Server, In-House REST API & Real Bakong KHQR
+## AI assistance
 
-**Assigned to:** Teammate 3 (*e.g., CHAN Panha*)  
-**Files Owned:**
-- [server/index.js](server/index.js)
-- [server/services/store.js](server/services/store.js)
-- [server/services/bakongService.js](server/services/bakongService.js)
-- [server/routes/menu.routes.js](server/routes/menu.routes.js)
-- [server/routes/khqr.routes.js](server/routes/khqr.routes.js)
-- [server/routes/orders.routes.js](server/routes/orders.routes.js)
+In line with the course GenAI guidelines, we're open about where AI was used. We used Claude (Anthropic) as a coding assistant to:
 
-### Task 3.1: Express Server & Static Hosting Setup
-- **WHAT it does:** Starts the Node.js server on Port `3000`, serves static frontend files from `public/`, and mounts `/api/*` endpoints.
-- **WHY we do it this way:** Serving frontend and API from one server avoids CORS issues and allows phones on the same Wi-Fi to access the app directly.
-- **HOW it works (in [server/index.js](server/index.js)):** Loads `.env` with `dotenv`, enables `cors()` and `express.json()`, serves `public/` via `express.static()`, and mounts menu, KHQR, and order routes.
+- connect the existing PUT and DELETE routes to the staff panel (edit form and delete confirmation)
+- add client-side form validation and the shared `ui.js` helpers
+- move custom styles and redesign the UI in a food-delivery-app style (photo cards, details sheet, bottom navigation, loading cards, order progress steps, staff filters)
+- find and fix a bug where checkout waited forever on the notification permission prompt
+- tidy up this README
 
-### Task 3.2: JSON File Persistence & Queue Number Generator
-- **WHAT it does:** Persists menu and orders in JSON files and generates sequential `orderId` (`101`, `102`...) and `queueNumber` (`"A-001"`, `"A-002"`...).
-- **WHY we do it this way:** Keeps orders saved across server restarts without requiring database software setup across all laptops.
-- **HOW it works (in [server/services/store.js](server/services/store.js)):** Uses `fs.readFileSync` / `fs.writeFileSync` and `getNextOrderIdentifiers()` with `.padStart(3, '0')` to format `"A-001"`.
-
-### Task 3.3: In-House Order & Menu REST API Endpoints
-- **WHAT it does:** Handles reading/toggling the menu, validating & storing orders, returning order polling status, and calculating analytics.
-- **WHY we do it this way:** Validates every payload server-side and returns clean, consistent JSON matching our project API contract.
-- **HOW it works:**
-  - `GET /api/menu` -> `{ items: [...] }`
-  - `PATCH /api/menu/:id/availability` -> `{ item }`
-  - `POST /api/orders` -> Validates `table` and `items`, assigns `orderId` + `queueNumber` + `status: "preparing"`, returns `201 Created`
-  - `GET /api/orders/:orderId/status` -> `{ orderId, queueNumber, status }`
-  - `PATCH /api/orders/:orderId/status` -> Updates status (`"preparing"` | `"ready"` | `"completed"`)
-  - `GET /api/orders` -> `{ orders, analytics }`
-
-### Task 3.4: Real Individual Bakong KHQR Generation & MD5 Verification
-- **WHAT it does:** Generates real EMVCo KHQR strings for a personal ABA/Bakong account via `bakong-khqr`, renders QR images with `qrcode`, and verifies payments by `md5`.
-- **WHY we do it this way:** NBC's `IndividualInfo` standard works with a **personal ABA/Bakong account** (no merchant registration required), and `md5` uniquely identifies each payment QR for NBC verification.
-- **HOW it works (in [server/services/bakongService.js](server/services/bakongService.js)):**
-  1. `generateKhqr()` builds `new IndividualInfo(accountId, accountName, merchantCity, { currency, amount, expirationTimestamp })` and calls `new BakongKHQR().generateIndividual(info)` to get `{ qr, md5 }`, then converts `qr` to a PNG Data URL via `QRCode.toDataURL(qr)`.
-  2. `verifyTransactionByMd5()` supports Demo simulation (`forceSimulate = true`) and live verification against `https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5` when `BAKONG_DEV_TOKEN` is configured, returning `{ responseCode: 0, data: { md5, amount, currency } }` when confirmed.
+We read through the changes, tested them in the browser, and each of us can explain the code in our own part.
 
 ---
 
-## PART 5: 4-Minute Live Presentation Script
+## Demo walkthrough
 
-1. **Minute 1 (Menu & QR Table Detection):** Open `http://localhost:3000/staff.html` to show the Table QR Generator for Table #7, then open `http://localhost:3000/?table=7`. Highlight automatic `Table #7` detection (`URLSearchParams`), category filtering, sold-out item disabling, cart quantity controls, and `localStorage` persistence.
-2. **Minute 2 (Real Bakong KHQR & Order Creation):** Click **Proceed to Bakong KHQR Payment**. Point out the real KHQR code + `MD5` hash generated for your personal ABA account. Click **Simulate Payment Confirmed (Demo)** (or scan with **100 KHR** mode) and show the newly assigned `Queue A-001` (`status: "preparing"`).
-3. **Minute 3 (Fetch API Polling & Web Notification):** Open Chrome DevTools (`Network` tab) to show `GET /api/orders/101/status` polling every 3 seconds. Switch to `staff.html`, show the updated **Total Orders** & **Today's Revenue** cards, and click **Mark Pickup Ready 🔔**. Watch the customer tab automatically turn green, chime, and pop up *"Queue A-001 is ready for pickup!"*.
+1. Open the staff panel and generate the QR code for a table.
+2. Scan it (or open `/?table=7`): the welcome banner shows the table number.
+3. Search and filter the menu, tap a dish to open its details, pick a quantity and add it. Show the cart badge and the "In cart" labels.
+4. Try to check out with a bad table number to show the validation errors, then fix it.
+5. Pay with the real KHQR code. Bakong confirms it and a queue number appears.
+6. In the staff panel, click **Food Done – Notify Customer**. The customer tab updates by itself, plays the chime and sends the notification. Then click **Picked Up**.
+7. In the staff panel, edit the order's note (PUT), then delete a test order (DELETE).

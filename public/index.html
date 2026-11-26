@@ -5,31 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AUPP E-Canteen — QR Menu & Digital Ordering</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="icon" href="./images/brand/aupp-logo.png" />
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen antialiased">
+<body class="bg-blue-50/40 text-slate-900 min-h-screen antialiased flex flex-col">
 
   <!-- Toast Notification Stack -->
-  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none"></div>
+  <div id="toast-container" class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 max-w-xs w-full pointer-events-none" aria-live="polite"></div>
 
   <!-- Top Navigation Bar -->
   <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200">
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
-          EC
-        </div>
+      <a href="/" class="flex items-center gap-2.5" aria-label="AUPP E-Canteen home">
+        <!-- AUPP logo; if the image file is missing, show the "EC" badge instead -->
+        <img
+          src="./images/brand/aupp-logo.png"
+          alt="AUPP logo"
+          class="w-10 h-10 object-contain"
+          onerror="this.hidden = true; document.getElementById('logo-fallback').classList.remove('hidden');"
+        />
+        <span id="logo-fallback" class="hidden w-10 h-10 rounded-xl bg-blue-900 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">EC</span>
         <div>
-          <h1 class="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">AUPP E-Canteen</h1>
-          <p class="text-[11px] text-slate-500">Group 8 • QR Ordering &amp; Bakong KHQR</p>
+          <h1 class="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">E-Canteen</h1>
+          <p class="text-[11px] text-slate-500">AUPP • Order &amp; pay at your table</p>
         </div>
-      </div>
+      </a>
 
-      <div class="flex items-center gap-2">
+      <nav class="flex items-center gap-2" aria-label="Main navigation">
         <button
           id="table-badge-btn"
           type="button"
-          class="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-colors"
-          title="Click to switch table number"
+          class="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 text-xs font-bold hover:bg-blue-100 transition-colors"
+          title="Click to change your table number"
         >
           Table <span id="table-badge-number">#1</span>
         </button>
@@ -37,46 +45,39 @@
         <button
           id="open-history-btn"
           type="button"
-          class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors inline-flex items-center"
+          class="hidden md:inline-flex px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors items-center"
           title="Order History"
         >
           <span class="hidden sm:inline">History</span>
-          <span class="sm:hidden">📜</span>
+          
         </button>
-
-        <a
-          href="/staff.html"
-          class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold hover:bg-slate-200 transition-colors hidden md:inline-flex"
-        >
-          Staff Panel
-        </a>
 
         <button
           id="open-cart-btn"
           type="button"
-          class="relative px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+          class="relative hidden md:flex px-3.5 py-2 rounded-xl bg-blue-900 text-white text-xs font-bold hover:bg-blue-950 transition-colors items-center gap-1.5"
         >
-          <span>🛒 Cart</span>
+          <span><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Cart</span>
           <span
             id="cart-count-badge"
             class="hidden bg-rose-500 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
           >0</span>
         </button>
-      </div>
+      </nav>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+  <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-6 space-y-6">
 
     <!-- Live Order Tracking Banner (Hidden until order is placed) -->
     <section
       id="order-tracking-section"
-      class="hidden rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-5 shadow-sm transition-colors"
+      class="hidden rounded-2xl border-2 border-blue-200 bg-blue-50 p-5 shadow-sm transition-colors"
     >
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2.5 flex-wrap">
-            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Active Order</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-blue-900">Active Order</span>
             <span id="tracking-order-meta" class="text-xs text-slate-600 font-medium">Order #101 • Table #1</span>
             <span id="tracking-status-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-amber-950">
               PREPARING
@@ -88,9 +89,17 @@
             <span id="tracking-queue-number" class="text-3xl font-black tracking-tight text-slate-900">A-001</span>
           </div>
 
-          <p id="tracking-status-message" class="text-sm text-indigo-900 mt-1">
+          <p id="tracking-status-message" class="text-sm text-blue-950 mt-1">
             The canteen kitchen is preparing your food.
           </p>
+          <!-- Order progress steps: tracking.js adds .is-done / .is-current -->
+          <ol id="tracking-steps" class="ec-steps mt-3" aria-label="Order progress">
+            <li data-step="paid">Paid</li>
+            <li data-step="preparing">Preparing</li>
+            <li data-step="ready">Ready</li>
+            <li data-step="completed">Picked up</li>
+          </ol>
+
           <p id="tracking-polling-indicator" class="text-[11px] text-slate-500 mt-2 font-mono">
             Checking status every 3s via Fetch API...
           </p>
@@ -100,9 +109,9 @@
           <button
             id="enable-notifications-btn"
             type="button"
-            class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+            class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-900 text-white hover:bg-blue-950"
           >
-            🔔 Enable Pickup Notification
+            <i class="fa-solid fa-bell" aria-hidden="true"></i> Enable Pickup Notification
           </button>
           <button
             id="dismiss-tracking-btn"
@@ -115,31 +124,104 @@
       </div>
     </section>
 
-    <!-- Menu Controls: Search & Categories -->
-    <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div id="category-tabs" class="flex items-center gap-2 overflow-x-auto pb-1">
-        <button type="button" data-category="all">All Menu</button>
-        <button type="button" data-category="food">🍛 Food</button>
-        <button type="button" data-category="drinks">🧋 Drinks &amp; Cafe</button>
-        <button type="button" data-category="dessert">🥭 Dessert</button>
-      </div>
+    <!-- Hero: greeting, table number, search, and how ordering works -->
+    <section class="ec-hero rounded-3xl p-5 sm:p-7 text-white">
+      <p class="text-sm font-semibold opacity-90">Hungry? You're at <span id="hero-table-number">Table #1</span></p>
+      <h2 class="text-2xl sm:text-4xl font-extrabold mt-1 leading-tight">What would you like<br class="sm:hidden" /> to eat today?</h2>
 
-      <div class="relative w-full sm:w-64">
+      <label for="menu-search" class="sr-only">Search the menu</label>
+      <div class="ec-search mt-4">
+        <i class="fa-solid fa-magnifying-glass text-slate-400" aria-hidden="true"></i>
         <input
           id="menu-search"
           type="search"
           placeholder="Search food, drinks, dessert..."
-          class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class="flex-1 bg-transparent text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none"
         />
+      </div>
+
+      <ol class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+        <li class="ec-hero-step"><span class="ec-hero-num">1</span> Pick food</li>
+        <li class="ec-hero-step"><span class="ec-hero-num">2</span> Pay with KHQR</li>
+        <li class="ec-hero-step"><span class="ec-hero-num">3</span> Get notified</li>
+      </ol>
+    </section>
+
+    <!-- Category chips -->
+    <section aria-label="Menu categories">
+      <h2 class="text-lg font-extrabold text-slate-900 mb-3">Categories</h2>
+      <div id="category-tabs" class="grid grid-cols-4 gap-2 sm:flex sm:items-center sm:gap-3">
+        <button type="button" data-category="all"><span class="ec-chip-icon"><i class="fa-solid fa-utensils" aria-hidden="true"></i></span>All</button>
+        <button type="button" data-category="food"><span class="ec-chip-icon"><i class="fa-solid fa-bowl-rice" aria-hidden="true"></i></span>Food</button>
+        <button type="button" data-category="drinks"><span class="ec-chip-icon"><i class="fa-solid fa-mug-hot" aria-hidden="true"></i></span>Drinks</button>
+        <button type="button" data-category="dessert"><span class="ec-chip-icon"><i class="fa-solid fa-ice-cream" aria-hidden="true"></i></span>Dessert</button>
       </div>
     </section>
 
     <!-- Menu Grid -->
-    <section>
-      <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    <section aria-label="Menu">
+      <div class="flex items-baseline justify-between mb-3">
+        <h2 class="text-lg font-extrabold text-slate-900">Popular Menu</h2>
+        <p id="menu-result-count" class="text-xs text-slate-500" aria-live="polite"></p>
+      </div>
+      <div id="menu-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5"></div>
     </section>
 
   </main>
+
+  <!-- Bottom Navigation (phones only) -->
+  <nav class="ec-bottom-nav md:hidden" aria-label="Mobile navigation">
+    <button type="button" id="nav-menu-btn" class="is-active">
+      <i class="fa-solid fa-house" aria-hidden="true"></i>Menu
+    </button>
+    <button type="button" id="nav-orders-btn">
+      <i class="fa-solid fa-receipt" aria-hidden="true"></i>Orders
+    </button>
+    <button type="button" id="nav-cart-btn" class="relative">
+      <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>Cart
+      <span id="mobile-cart-count" class="ec-nav-badge hidden">0</span>
+    </button>
+  </nav>
+
+  <footer class="ec-footer bg-white pb-20 md:pb-0">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2">
+      <p>&copy; 2026 AUPP E-Canteen — Group 8 (INFO 251 Web Development II)</p>
+      <p>Payments by Bakong KHQR</p>
+    </div>
+  </footer>
+
+  <!-- Food Details Sheet (opens when a menu card is tapped) -->
+  <div id="food-sheet" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
+    <div class="ec-sheet-panel bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="sheet-name">
+      <div class="ec-photo h-56 sm:h-64">
+        <img id="sheet-photo" alt="" class="w-full h-full object-cover" />
+        <button id="close-sheet-btn" type="button" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 text-slate-800 font-bold shadow" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      </div>
+      <div class="p-5 space-y-3">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p id="sheet-category" class="text-[11px] uppercase tracking-wider font-bold text-blue-900"></p>
+            <h3 id="sheet-name" class="text-xl font-extrabold text-slate-900"></h3>
+          </div>
+          <span id="sheet-rating" class="ec-rating shrink-0"></span>
+        </div>
+        <p id="sheet-description" class="text-sm text-slate-600"></p>
+
+        <div class="flex items-center justify-between pt-2">
+          <span id="sheet-price" class="text-2xl font-black text-slate-900"></span>
+          <div class="ec-stepper" aria-label="Quantity">
+            <button type="button" id="sheet-dec-btn" aria-label="Decrease quantity">−</button>
+            <span id="sheet-qty">1</span>
+            <button type="button" id="sheet-inc-btn" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+
+        <button id="sheet-add-btn" type="button" class="w-full py-3.5 rounded-2xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-sm shadow-lg shadow-blue-200 disabled:bg-slate-300 disabled:shadow-none">
+          Add to cart
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Slide-over Cart Drawer -->
   <div id="cart-backdrop" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"></div>
@@ -150,19 +232,19 @@
     <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
       <div>
         <h2 class="text-lg font-extrabold text-slate-900">Your Order Cart</h2>
-        <p id="cart-table-number" class="text-xs font-semibold text-indigo-600">Table #1</p>
+        <p id="cart-table-number" class="text-xs font-semibold text-blue-900">Table #1</p>
       </div>
       <button
         id="close-cart-btn"
         type="button"
         class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
         aria-label="Close cart"
-      >✕</button>
+      ><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
 
-    <div class="flex-1 overflow-y-auto p-5 space-y-3">
+    <div class="ec-scroll flex-1 overflow-y-auto p-5 space-y-3">
       <div id="cart-empty-state" class="text-center py-12">
-        <p class="text-3xl mb-2">🛒</p>
+        <p class="text-3xl mb-2 text-slate-300"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i></p>
         <p class="text-sm font-semibold text-slate-700">Your cart is empty</p>
         <p class="text-xs text-slate-500 mt-1">Select food, drinks, or desserts from the menu.</p>
       </div>
@@ -170,18 +252,41 @@
       <div id="cart-items-list" class="space-y-3"></div>
     </div>
 
-    <div class="p-5 border-t border-slate-200 bg-slate-50 space-y-3">
+    <form id="checkout-form" class="p-5 border-t border-slate-200 bg-slate-50 space-y-3" novalidate>
+      <div>
+        <label for="table-number-input" class="block text-xs font-semibold text-slate-600 mb-1">
+          Table Number <span class="text-rose-600">*</span>
+        </label>
+        <input
+          id="table-number-input"
+          name="table"
+          type="number"
+          inputmode="numeric"
+          min="1"
+          max="99"
+          step="1"
+          required
+          placeholder="1–99"
+          class="ec-input w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm font-bold"
+        />
+        <p id="table-number-input-error" class="ec-field-error" role="alert"></p>
+      </div>
+
       <div>
         <label for="customer-note-input" class="block text-xs font-semibold text-slate-600 mb-1">
           Order Note (Optional)
         </label>
         <input
           id="customer-note-input"
+          name="customerNote"
           type="text"
-          maxlength="120"
           placeholder="e.g., Less ice, no sugar..."
-          class="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class="ec-input w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm"
         />
+        <div class="flex items-start justify-between gap-2">
+          <p id="customer-note-input-error" class="ec-field-error" role="alert"></p>
+          <span id="customer-note-count" class="ec-char-count ml-auto">0 / 120</span>
+        </div>
       </div>
 
       <div class="flex items-center justify-between text-base font-extrabold text-slate-900 pt-1">
@@ -189,20 +294,21 @@
         <span id="cart-subtotal">$0.00</span>
       </div>
 
+      <p id="checkout-form-error" class="ec-field-error text-center" role="alert"></p>
+
       <button
         id="proceed-checkout-btn"
-        type="button"
-        disabled
-        class="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+        type="submit"
+        class="w-full py-3 rounded-xl bg-blue-900 text-white font-bold text-sm hover:bg-blue-950 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
       >
         Proceed to Bakong KHQR Payment
       </button>
-    </div>
+    </form>
   </aside>
 
   <!-- Bakong KHQR Payment Modal -->
   <div id="khqr-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
+    <div class="ec-modal-panel bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
       <!-- Official KHQR-Inspired Red Header -->
       <div class="bg-[#E1232E] text-white px-5 py-4 flex items-center justify-between">
         <div>
@@ -213,7 +319,7 @@
           id="close-khqr-btn"
           type="button"
           class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-sm"
-        >✕</button>
+        ><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
       </div>
 
       <div class="p-5 space-y-4 text-center">
@@ -231,14 +337,14 @@
           <p id="khqr-md5-display" class="text-[10px] font-mono text-slate-400 mt-1 break-all"></p>
         </div>
 
-        <p id="khqr-mode-status" class="text-[11px] text-indigo-700 bg-indigo-50 px-3 py-2 rounded-xl font-medium"></p>
+        <p id="khqr-mode-status" class="text-[11px] text-blue-950 bg-blue-50 px-3 py-2 rounded-xl font-medium"></p>
 
         <button
           id="simulate-khqr-pay-btn"
           type="button"
           class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-colors shadow-sm"
         >
-          ✓ Simulate Payment Confirmed (Demo)
+          <i class="fa-solid fa-check" aria-hidden="true"></i> Simulate Payment Confirmed (Demo)
         </button>
       </div>
     </div>
@@ -246,26 +352,15 @@
 
   <!-- Order History Modal -->
   <div id="history-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl border border-slate-200">
+    <div class="ec-modal-panel bg-white rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl border border-slate-200">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <h3 class="text-base font-extrabold text-slate-900">Your Recent Orders</h3>
-        <button id="close-history-btn" type="button" class="text-slate-500 hover:text-slate-900 font-bold">✕</button>
+        <button id="close-history-btn" type="button" class="text-slate-500 hover:text-slate-900 font-bold"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
       </div>
       <div id="history-list" class="p-5 overflow-y-auto space-y-3"></div>
     </div>
   </div>
 
-  <script type="module">
-    import { initTableNumber, initCartEvents } from './js/cart.js';
-    import { initMenuEvents } from './js/menu.js';
-    import { initCheckoutEvents } from './js/checkout.js';
-    import { initTrackingEvents } from './js/tracking.js';
-
-    initTableNumber();
-    initCartEvents();
-    initMenuEvents();
-    initCheckoutEvents();
-    initTrackingEvents();
-  </script>
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>

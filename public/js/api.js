@@ -4,13 +4,19 @@
  */
 
 async function request(url, options = {}) {
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    // fetch() only rejects on network failure (server down, offline, CORS)
+    throw new Error('Network error — cannot reach the canteen server. Check your connection.');
+  }
 
   const data = await response.json().catch(() => ({}));
 

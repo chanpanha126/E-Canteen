@@ -1,0 +1,435 @@
+/*
+ * AUPP E-Canteen — custom stylesheet
+ * Tailwind (CDN) handles layout utilities; this file holds the project's own
+ * component styles: toasts, modals, form validation states, and the footer.
+ */
+
+:root {
+  --ec-primary: #202f64;
+  --ec-danger: #e11d48;
+  --ec-danger-soft: #fff1f2;
+  --ec-success: #059669;
+  --ec-muted: #64748b;
+  --ec-radius: 0.75rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ---------- Toast notifications ---------- */
+.ec-toast {
+  pointer-events: auto;
+  animation: ec-toast-in 0.25s ease-out;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.ec-toast.is-leaving {
+  opacity: 0;
+  transform: translateY(0.5rem);
+}
+
+@keyframes ec-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Modals ---------- */
+.ec-modal-panel {
+  animation: ec-modal-in 0.2s ease-out;
+}
+
+@keyframes ec-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ---------- Form validation ---------- */
+.ec-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ec-input:focus {
+  outline: none;
+  border-color: var(--ec-primary);
+  box-shadow: 0 0 0 3px rgba(32, 47, 100, 0.2);
+}
+
+.ec-input.is-invalid {
+  border-color: var(--ec-danger);
+  background-color: var(--ec-danger-soft);
+}
+
+.ec-input.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.2);
+}
+
+.ec-field-error {
+  display: none;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ec-danger);
+}
+
+.ec-field-error.is-visible {
+  display: block;
+}
+
+.ec-char-count {
+  font-size: 0.68rem;
+  color: var(--ec-muted);
+  text-align: right;
+}
+
+.ec-char-count.is-over {
+  color: var(--ec-danger);
+  font-weight: 700;
+}
+
+/* ---------- Order cards (staff) ---------- */
+.ec-order-card {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.ec-order-card.is-removing {
+  opacity: 0;
+  transform: translateX(1rem);
+}
+
+.ec-confirm-bar {
+  border: 1px dashed var(--ec-danger);
+  background: var(--ec-danger-soft);
+  border-radius: var(--ec-radius);
+}
+
+/* ---------- API error / retry state ---------- */
+.ec-error-state {
+  border: 1px solid #fecdd3;
+  background: var(--ec-danger-soft);
+  color: #9f1239;
+  border-radius: 1rem;
+}
+
+.ec-sync-status.is-offline {
+  color: var(--ec-danger);
+  font-weight: 600;
+}
+
+/* ---------- Footer ---------- */
+.ec-footer {
+  border-top: 1px solid #e2e8f0;
+  color: var(--ec-muted);
+  font-size: 0.75rem;
+}
+
+/* ---------- Welcome banner (customer page) ---------- */
+.ec-hero {
+  background: linear-gradient(135deg, #202f64 0%, #2f4aa0 100%);
+  box-shadow: 0 10px 25px -10px rgba(32, 47, 100, 0.5);
+}
+
+.ec-hero-step {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.35rem;
+  border-radius: var(--ec-radius);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.ec-hero-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ec-primary);
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+/* Search bar inside the hero */
+.ec-search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.35);
+}
+
+/* Category chips (colours set in menu.js) */
+.ec-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: #eef2fb;
+  color: var(--ec-primary);
+  font-size: 0.95rem;
+}
+
+/* On tablets/desktop the icon sits left of the label, so add a gap */
+@media (min-width: 640px) {
+  .ec-chip-icon {
+    margin-right: 0.5rem;
+  }
+}
+
+/* ---------- Food photos ---------- */
+/* Grey box behind every photo; if the photo fails to load, menu.js removes the
+   <img> and adds .is-missing, so only the grey placeholder with an icon is left */
+.ec-photo {
+  position: relative;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.ec-photo.is-missing::after {
+  content: "\f2e7"; /* Font Awesome "utensils" icon */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  color: #94a3b8;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+}
+
+.ec-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #c1272d;
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Round "+" button on food cards */
+.ec-add-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: var(--ec-primary);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 6px 14px -6px rgba(32, 47, 100, 0.6);
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.ec-add-btn:hover { background: #172150; }
+.ec-add-btn:active { transform: scale(0.92); }
+.ec-add-btn:disabled {
+  background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Quantity stepper in the food details sheet */
+.ec-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+}
+
+.ec-stepper button {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.ec-stepper span {
+  min-width: 1.25rem;
+  text-align: center;
+  font-weight: 800;
+}
+
+.ec-sheet-panel {
+  animation: ec-sheet-in 0.25s ease-out;
+}
+
+@keyframes ec-sheet-in {
+  from { transform: translateY(2rem); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ---------- Bottom navigation (phones) ---------- */
+.ec-bottom-nav {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 30;
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem;
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.35);
+}
+
+.ec-bottom-nav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.35rem 1rem;
+  border-radius: 0.9rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ec-muted);
+}
+
+.ec-bottom-nav button i {
+  font-size: 1.2rem;
+}
+
+.ec-bottom-nav button.is-active {
+  background: #eef2fb;
+  color: var(--ec-primary);
+}
+
+.ec-nav-badge {
+  position: absolute;
+  top: 0;
+  right: 0.4rem;
+  min-width: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 0.65rem;
+  line-height: 1.15rem;
+}
+
+/* ---------- Menu cards ---------- */
+.ec-menu-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ec-menu-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Emoji background colour by category */
+.ec-cat-food { background: #fef3c7; }
+.ec-cat-drinks { background: #e0f2fe; }
+.ec-cat-dessert { background: #fce7f3; }
+
+.ec-in-cart {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ec-primary);
+  background: #eef2fb;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
+
+/* Loading placeholder cards */
+.ec-skeleton {
+  height: 13rem;
+  border-radius: 1rem;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: ec-shimmer 1.2s infinite linear;
+}
+
+@keyframes ec-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ---------- Order progress steps (tracking banner) ---------- */
+.ec-steps {
+  display: flex;
+  gap: 0.25rem;
+  list-style: none;
+  padding: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ec-muted);
+}
+
+.ec-steps li {
+  flex: 1;
+  min-width: 4.5rem;
+  padding-top: 0.45rem;
+  border-top: 4px solid #cbd5e1;
+}
+
+.ec-steps li.is-done {
+  border-top-color: var(--ec-success);
+  color: var(--ec-success);
+}
+
+.ec-steps li.is-current {
+  border-top-color: var(--ec-primary);
+  color: var(--ec-primary);
+}
+
+/* ---------- Staff order cards: colour by status ---------- */
+/* Two classes = higher specificity than Tailwind's single "border" class */
+.ec-order-card.ec-status-preparing,
+.ec-order-card.ec-status-ready,
+.ec-order-card.ec-status-completed {
+  border-left-width: 5px;
+}
+
+.ec-order-card.ec-status-preparing { border-left-color: #f59e0b; }
+.ec-order-card.ec-status-ready { border-left-color: var(--ec-success); }
+.ec-order-card.ec-status-completed { border-left-color: #94a3b8; }
+
+/* ---------- Scrollbars ---------- */
+.ec-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ec-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ec-toast,
+  .ec-modal-panel,
+  .ec-order-card,
+  .ec-menu-card,
+  .ec-skeleton {
+    animation: none;
+    transition: none;
+  }
+}

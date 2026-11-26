@@ -1,13 +1,14 @@
 [
   {
     "id": "food-01",
-    "name": "Chicken Fried Rice",
+    "name": "Fried Rice",
     "category": "food",
-    "price": 0.1,
+    "price": 3.5,
     "available": true,
     "rating": 4.8,
-    "description": "Wok-tossed jasmine rice with roasted chicken, egg, and fresh cucumber.",
-    "emoji": "🍛"
+    "description": "Wok-fried jasmine rice with egg, carrot, and spring onion.",
+    "emoji": "🍛",
+    "image": "images/menu/food-01.jpg"
   },
   {
     "id": "food-02",
@@ -16,8 +17,9 @@
     "price": 4.5,
     "available": true,
     "rating": 4.9,
-    "description": "Tender stir-fried Cambodian beef served with steamed rice and lime-pepper dip.",
-    "emoji": "🥩"
+    "description": "Stir-fried marinated beef on lettuce and tomato, with rice and lime-pepper dip.",
+    "emoji": "🍛",
+    "image": "images/menu/food-02.jpg"
   },
   {
     "id": "food-03",
@@ -26,18 +28,86 @@
     "price": 3,
     "available": true,
     "rating": 4.7,
-    "description": "Classic Cambodian rice noodle soup with minced pork, shrimp, and crispy garlic.",
-    "emoji": "🍜"
+    "description": "Rice noodle soup in clear pork broth with meatballs, bean sprouts, and fried garlic.",
+    "emoji": "🍛",
+    "image": "images/menu/food-03.jpg"
   },
   {
     "id": "food-04",
-    "name": "Teriyaki Chicken Bento",
+    "name": "Fish Amok",
     "category": "food",
     "price": 4,
-    "available": false,
+    "available": true,
+    "rating": 4.9,
+    "description": "Steamed fish in creamy coconut curry, served in a banana-leaf cup.",
+    "emoji": "🍛",
+    "image": "images/menu/food-04.jpg"
+  },
+  {
+    "id": "food-05",
+    "name": "Basil Chicken with Rice",
+    "category": "food",
+    "price": 3,
+    "available": true,
     "rating": 4.6,
-    "description": "Grilled glazed chicken thigh with steamed rice and sesame greens.",
-    "emoji": "🍱"
+    "description": "Chicken stir-fried with holy basil, chilli, and peppers, served with steamed rice.",
+    "emoji": "🍛",
+    "image": "images/menu/food-05.jpg"
+  },
+  {
+    "id": "food-06",
+    "name": "Num Banhchok",
+    "category": "food",
+    "price": 2.5,
+    "available": true,
+    "rating": 4.7,
+    "description": "Fresh rice noodles with green fish curry and crunchy vegetables.",
+    "emoji": "🍛",
+    "image": "images/menu/food-06.jpg"
+  },
+  {
+    "id": "food-07",
+    "name": "Num Pang",
+    "category": "food",
+    "price": 2,
+    "available": true,
+    "rating": 4.5,
+    "description": "Khmer baguette with pork pate, cold cuts, pickles, and chilli.",
+    "emoji": "🍛",
+    "image": "images/menu/food-07.jpg"
+  },
+  {
+    "id": "food-08",
+    "name": "Grilled Chicken",
+    "category": "food",
+    "price": 4,
+    "available": true,
+    "rating": 4.8,
+    "description": "Charcoal-grilled chicken with green mango salad and spicy dipping sauces.",
+    "emoji": "🍛",
+    "image": "images/menu/food-08.jpg"
+  },
+  {
+    "id": "food-09",
+    "name": "Seafood Soup",
+    "category": "food",
+    "price": 4.5,
+    "available": true,
+    "rating": 4.6,
+    "description": "Hot and sour soup with prawn, lime, and fresh herbs.",
+    "emoji": "🍛",
+    "image": "images/menu/food-09.jpg"
+  },
+  {
+    "id": "food-10",
+    "name": "Grilled Prahok",
+    "category": "food",
+    "price": 3.5,
+    "available": true,
+    "rating": 4.5,
+    "description": "Grilled seasoned fermented fish with fresh vegetables for dipping.",
+    "emoji": "🍛",
+    "image": "images/menu/food-10.jpg"
   },
   {
     "id": "drink-01",
@@ -47,7 +117,8 @@
     "available": true,
     "rating": 4.9,
     "description": "Double-shot espresso poured over chilled fresh milk and ice.",
-    "emoji": "🧋"
+    "emoji": "🧋",
+    "image": "images/menu/drink-01.jpg"
   },
   {
     "id": "drink-02",
@@ -57,7 +128,8 @@
     "available": true,
     "rating": 4.8,
     "description": "Refreshing sparkling soda blended with fresh Cambodian passion fruit.",
-    "emoji": "🍹"
+    "emoji": "🍹",
+    "image": "images/menu/drink-02.jpg"
   },
   {
     "id": "drink-03",
@@ -67,17 +139,8 @@
     "available": true,
     "rating": 4.7,
     "description": "Ceremonial-grade matcha whisked with creamy milk over ice.",
-    "emoji": "🍵"
-  },
-  {
-    "id": "dessert-01",
-    "name": "Mango Sticky Rice",
-    "category": "dessert",
-    "price": 2.5,
-    "available": true,
-    "rating": 4.9,
-    "description": "Sweet ripe mango slices with warm coconut-infused glutinous rice.",
-    "emoji": "🥭"
+    "emoji": "🍵",
+    "image": "images/menu/drink-03.jpg"
   },
   {
     "id": "dessert-02",
@@ -87,7 +150,8 @@
     "available": true,
     "rating": 4.6,
     "description": "Flaky golden French pastry filled with rich dark chocolate.",
-    "emoji": "🥐"
+    "emoji": "🥐",
+    "image": "images/menu/dessert-02.jpg"
   },
   {
     "id": "dessert-03",
@@ -97,6 +161,7 @@
     "available": true,
     "rating": 4.7,
     "description": "Silky caramel custard infused with fresh coconut cream.",
-    "emoji": "🍮"
+    "emoji": "🍮",
+    "image": "images/menu/dessert-03.jpg"
   }
 ]

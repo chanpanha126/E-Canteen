@@ -7,12 +7,16 @@ import {
   getCart,
   getCartTotal,
   getTableNumber,
+  setTableNumber,
   clearCart,
   closeCartDrawer,
   saveOrderToHistory,
   showToast,
 } from './cart.js';
+import { setFieldError, updateCharCount } from './ui.js';
 import { requestNotificationPermission, startOrderTracking } from './tracking.js';
+
+const NOTE_MAX_LENGTH = 120;
 
 let currentKhqrSession = null;
 let khqrVerifyTimer = null;
@@ -54,7 +58,10 @@ async function finalizePaidOrder(md5) {
     });
 
     clearCart();
-    if (noteInput) noteInput.value = '';
+    if (noteInput) {
+      noteInput.value = '';
+      updateCharCount(noteInput, document.getElementById('customer-note-count'), NOTE_MAX_LENGTH);
+    }
     saveOrderToHistory(createdOrder);
     closeKhqrModal();
     closeCartDrawer();
@@ -135,6 +142,75 @@ async function loadKhqrCode() {
   }
 }
 
+/* ---------- Checkout form validation ---------- */
+
+function validateTableField() {
+  const input = document.getElementById('table-number-input');
+  if (!input) return true;
+  const raw = input.value.trim();
+  const value = Number(raw);
+
+  if (raw === '') {
+    setFieldError(input, 'Table number is required.');
+    return false;
+  }
+  if (!Number.isInteger(value)) {
+    setFieldError(input, 'Table number must be a whole number.');
+    return false;
+  }
+  if (value < 1 || value > 99) {
+    setFieldError(input, 'Table number must be between 1 and 99.');
+    return false;
+  }
+  setFieldError(input);
+  return true;
+}
+
+function validateNoteField() {
+  const input = document.getElementById('customer-note-input');
+  if (!input) return true;
+  const note = input.value.trim();
+
+  if (note.length > NOTE_MAX_LENGTH) {
+    setFieldError(input, `Note must be ${NOTE_MAX_LENGTH} characters or fewer (currently ${note.length}).`);
+    return false;
+  }
+  if (/[<>]/.test(note)) {
+    setFieldError(input, 'Note cannot contain < or > characters.');
+    return false;
+  }
+  setFieldError(input);
+  return true;
+}
+
+function validateCartNotEmpty() {
+  const formError = document.getElementById('checkout-form-error');
+  const isEmpty = getCart().length === 0;
+  if (formError) {
+    formError.textContent = isEmpty ? 'Your cart is empty — add at least one item before checking out.' : '';
+    formError.classList.toggle('is-visible', isEmpty);
+  }
+  return !isEmpty;
+}
+
+function validateCheckoutForm() {
+  // Run every check (not short-circuit) so all errors show at once
+  const results = [validateCartNotEmpty(), validateTableField(), validateNoteField()];
+  return results.every(Boolean);
+}
+
+async function handleCheckoutSubmit(e) {
+  e.preventDefault();
+
+  if (!validateCheckoutForm()) {
+    document.querySelector('#checkout-form .is-invalid')?.focus();
+    return;
+  }
+
+  setTableNumber(document.getElementById('table-number-input').value.trim());
+  await openKhqrCheckoutModal();
+}
+
 export async function openKhqrCheckoutModal() {
   const items = getCart();
   if (items.length === 0) {
@@ -142,8 +218,9 @@ export async function openKhqrCheckoutModal() {
     return;
   }
 
-  // Ask Web Notification permission right when user clicks Checkout (valid user gesture)
-  await requestNotificationPermission();
+  // Ask Web Notification permission right when user clicks Checkout (valid user gesture).
+  // Not awaited: if the customer ignores the browser prompt, the payment modal must still open.
+  requestNotificationPermission();
 
   const summaryEl = document.getElementById('khqr-order-summary');
   if (summaryEl) {
@@ -157,13 +234,32 @@ export async function openKhqrCheckoutModal() {
 }
 
 export function initCheckoutEvents() {
-  document
-    .getElementById('proceed-checkout-btn')
-    ?.addEventListener('click', openKhqrCheckoutModal);
+  document.getElementById('checkout-form')?.addEventListener('submit', handleCheckoutSubmit);
+
+  // Live feedback: re-validate a field once it has shown an error, and keep the counter updated
+  const tableInput = document.getElementById('table-number-input');
+  tableInput?.addEventListener('input', () => {
+    if (tableInput.classList.contains('is-invalid')) validateTableField();
+  });
+  tableInput?.addEventListener('blur', validateTableField);
+
+  const noteInput = document.getElementById('customer-note-input');
+  const noteCounter = document.getElementById('customer-note-count');
+  noteInput?.addEventListener('input', () => {
+    updateCharCount(noteInput, noteCounter, NOTE_MAX_LENGTH);
+    if (noteInput.classList.contains('is-invalid') || noteInput.value.length > NOTE_MAX_LENGTH) {
+      validateNoteField();
+    }
+  });
+  updateCharCount(noteInput, noteCounter, NOTE_MAX_LENGTH);
 
   document
     .getElementById('close-khqr-btn')
     ?.addEventListener('click', closeKhqrModal);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && currentKhqrSession) closeKhqrModal();
+  });
 
   document
     .getElementById('simulate-khqr-pay-btn')
@@ -197,7 +293,7 @@ export function initCheckoutEvents() {
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '✓ Simulate Payment Confirmed (Demo)';
+          btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i> Simulate Payment Confirmed (Demo)';
         }
       }
     });

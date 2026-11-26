@@ -2,6 +2,11 @@
  * Teammate 1 Ownership: Shopping Cart, Table QR Parameter, & Order History State
  */
 
+import { escapeHtml, showToast, getStatusLabel } from './ui.js';
+
+// Re-exported so existing imports (`import { showToast } from './cart.js'`) keep working
+export { showToast };
+
 const CART_STORAGE_KEY = 'ecanteen_cart';
 const TABLE_STORAGE_KEY = 'ecanteen_table';
 const HISTORY_STORAGE_KEY = 'ecanteen_history';
@@ -21,27 +26,6 @@ function saveCart() {
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
 }
 
-export function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-
-  const colors = {
-    success: 'bg-emerald-600 text-white',
-    error: 'bg-rose-600 text-white',
-    info: 'bg-slate-900 text-white',
-  };
-
-  const toast = document.createElement('div');
-  toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 transition-all duration-300`;
-  toast.textContent = message;
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add('opacity-0', 'translate-y-2');
-    setTimeout(() => toast.remove(), 300);
-  }, 2800);
-}
-
 /**
  * Reads ?table=7 from QR code URL, falls back to localStorage or Table 1.
  */
@@ -49,7 +33,7 @@ export function initTableNumber() {
   const params = new URLSearchParams(window.location.search);
   const urlTable = Number(params.get('table'));
 
-  if (Number.isInteger(urlTable) && urlTable > 0) {
+  if (Number.isInteger(urlTable) && urlTable > 0 && urlTable <= 99) {
     localStorage.setItem(TABLE_STORAGE_KEY, String(urlTable));
   } else if (!localStorage.getItem(TABLE_STORAGE_KEY)) {
     localStorage.setItem(TABLE_STORAGE_KEY, '1');
@@ -63,12 +47,14 @@ export function getTableNumber() {
   return Number.isInteger(saved) && saved > 0 ? saved : 1;
 }
 
+/**
+ * Saves a table number that has already passed form validation (see checkout.js).
+ */
 export function setTableNumber(newTable) {
   const parsed = Number(newTable);
-  if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 99) {
-    showToast('Please enter a valid table number (1–99).', 'error');
-    return false;
-  }
+  if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 99) return false;
+  if (parsed === getTableNumber()) return true;
+
   localStorage.setItem(TABLE_STORAGE_KEY, String(parsed));
   renderTableBadge();
   showToast(`Switched to Table #${parsed}`, 'info');
@@ -78,9 +64,13 @@ export function setTableNumber(newTable) {
 function renderTableBadge() {
   const badge = document.getElementById('table-badge-number');
   const checkoutTable = document.getElementById('cart-table-number');
+  const tableInput = document.getElementById('table-number-input');
+  const heroTable = document.getElementById('hero-table-number');
   const current = getTableNumber();
   if (badge) badge.textContent = `#${current}`;
   if (checkoutTable) checkoutTable.textContent = `Table #${current}`;
+  if (heroTable) heroTable.textContent = `Table #${current}`;
+  if (tableInput && document.activeElement !== tableInput) tableInput.value = String(current);
 }
 
 export function getCart() {
@@ -97,7 +87,11 @@ export function getCartCount() {
   return cart.reduce((sum, item) => sum + item.qty, 0);
 }
 
-export function addToCart(menuItem) {
+/**
+ * Adds `qty` of a menu item to the cart (default 1).
+ * The food details sheet passes a bigger qty from its − / + stepper.
+ */
+export function addToCart(menuItem, qty = 1) {
   if (!menuItem || !menuItem.available) {
     showToast('Sorry, this item is currently sold out.', 'error');
     return;
@@ -105,20 +99,21 @@ export function addToCart(menuItem) {
 
   const existing = cart.find((c) => c.id === menuItem.id);
   if (existing) {
-    existing.qty += 1;
+    existing.qty += qty;
   } else {
     cart.push({
       id: menuItem.id,
       name: menuItem.name,
       price: Number(menuItem.price),
       emoji: menuItem.emoji || '🍽️',
-      qty: 1,
+      image: menuItem.image || '',
+      qty,
     });
   }
 
   saveCart();
   renderCart();
-  showToast(`Added ${menuItem.name} to cart`, 'success');
+  showToast(`Added ${qty} × ${menuItem.name} to cart`, 'success');
 }
 
 export function updateCartQty(itemId, delta) {
@@ -167,7 +162,7 @@ export function renderCart() {
   const itemsContainer = document.getElementById('cart-items-list');
   const emptyState = document.getElementById('cart-empty-state');
   const subtotalEl = document.getElementById('cart-subtotal');
-  const checkoutBtn = document.getElementById('proceed-checkout-btn');
+  const formError = document.getElementById('checkout-form-error');
 
   const count = getCartCount();
   const total = getCartTotal();
@@ -181,9 +176,21 @@ export function renderCart() {
     subtotalEl.textContent = `$${total.toFixed(2)}`;
   }
 
-  if (checkoutBtn) {
-    checkoutBtn.disabled = cart.length === 0;
+  // Clear the "cart is empty" form error as soon as something is added
+  if (formError && cart.length > 0) {
+    formError.textContent = '';
+    formError.classList.remove('is-visible');
   }
+
+  // Cart badge on the phone bottom navigation
+  const navBadge = document.getElementById('mobile-cart-count');
+  if (navBadge) {
+    navBadge.textContent = String(count);
+    navBadge.classList.toggle('hidden', count === 0);
+  }
+
+  // Tell other modules (menu.js) the cart changed so they can update "In cart" badges
+  document.dispatchEvent(new CustomEvent('cart:updated'));
 
   if (!itemsContainer || !emptyState) return;
 
@@ -199,9 +206,11 @@ export function renderCart() {
       (item) => `
       <div class="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
         <div class="flex items-center gap-3 min-w-0">
-          <span class="text-2xl shrink-0">${item.emoji}</span>
+          <div class="ec-photo w-12 h-12 rounded-xl shrink-0 ${item.image ? '' : 'is-missing'}">
+            ${item.image ? `<img src="${escapeHtml(item.image)}" alt="" class="w-full h-full object-cover" onerror="this.parentElement.classList.add('is-missing'); this.remove();" />` : ''}
+          </div>
           <div class="min-w-0">
-            <p class="font-semibold text-slate-900 text-sm truncate">${item.name}</p>
+            <p class="font-semibold text-slate-900 text-sm truncate">${escapeHtml(item.name)}</p>
             <p class="text-xs text-slate-500">$${item.price.toFixed(2)} each</p>
           </div>
         </div>
@@ -227,7 +236,7 @@ export function renderCart() {
             data-id="${item.id}"
             class="ml-1 text-rose-500 hover:text-rose-700 text-xs font-medium px-1.5 py-1"
             aria-label="Remove item"
-          >✕</button>
+          ><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
       </div>
     `
@@ -273,9 +282,9 @@ export function renderOrderHistoryModal() {
               : order.status === 'completed'
               ? 'bg-slate-200 text-slate-700'
               : 'bg-amber-100 text-amber-800'
-          }">${order.status.toUpperCase()}</span>
+          }">${escapeHtml(getStatusLabel(order.status)).toUpperCase()}</span>
         </div>
-        <p class="text-xs text-slate-600">Table #${order.table} • ${order.items.map((i) => `${i.qty}x ${i.name}`).join(', ')}</p>
+        <p class="text-xs text-slate-600">Table #${order.table} • ${order.items.map((i) => `${i.qty}x ${escapeHtml(i.name)}`).join(', ')}</p>
         <p class="text-xs font-semibold text-slate-800">Total: $${Number(order.totalAmount || 0).toFixed(2)}</p>
       </div>
     `
@@ -285,6 +294,15 @@ export function renderOrderHistoryModal() {
 
 export function initCartEvents() {
   document.getElementById('open-cart-btn')?.addEventListener('click', openCartDrawer);
+  // Phone bottom navigation: Menu (scroll to top), Orders (history), Cart (drawer)
+  document.getElementById('nav-menu-btn')?.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  document.getElementById('nav-orders-btn')?.addEventListener('click', () => {
+    renderOrderHistoryModal();
+    document.getElementById('history-modal')?.classList.remove('hidden');
+  });
+  document.getElementById('nav-cart-btn')?.addEventListener('click', openCartDrawer);
   document.getElementById('close-cart-btn')?.addEventListener('click', closeCartDrawer);
   document.getElementById('cart-backdrop')?.addEventListener('click', closeCartDrawer);
 
@@ -299,12 +317,12 @@ export function initCartEvents() {
     else if (action === 'remove') removeFromCart(id);
   });
 
-  // Table badge click to change table
+  // Table badge click → open the cart and focus the validated Table Number field
   document.getElementById('table-badge-btn')?.addEventListener('click', () => {
-    const next = window.prompt('Enter your AUPP Canteen Table Number (1–99):', String(getTableNumber()));
-    if (next !== null) {
-      setTableNumber(next.trim());
-    }
+    openCartDrawer();
+    const tableInput = document.getElementById('table-number-input');
+    tableInput?.focus();
+    tableInput?.select();
   });
 
   // Order history modal toggles
@@ -316,5 +334,13 @@ export function initCartEvents() {
     document.getElementById('history-modal')?.classList.add('hidden');
   });
 
+  // Keyboard: Esc closes the cart drawer and history popup
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    closeCartDrawer();
+    document.getElementById('history-modal')?.classList.add('hidden');
+  });
+
   renderCart();
+  renderTableBadge();
 }

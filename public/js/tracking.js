@@ -72,6 +72,21 @@ function triggerPickupReadyAlert(queueNumber, orderId) {
   }
 }
 
+/**
+ * Colours the progress steps: Paid → Preparing → Ready → Picked up.
+ * Steps before the current status are "done" (green), the current one is highlighted.
+ */
+const STEP_ORDER = ['paid', 'preparing', 'ready', 'completed'];
+
+function renderTrackingSteps(status) {
+  const currentIndex = STEP_ORDER.indexOf(status);
+  document.querySelectorAll('#tracking-steps li').forEach((li) => {
+    const stepIndex = STEP_ORDER.indexOf(li.dataset.step);
+    li.classList.toggle('is-done', stepIndex < currentIndex || status === 'completed');
+    li.classList.toggle('is-current', stepIndex === currentIndex && status !== 'completed');
+  });
+}
+
 function renderTrackingCard(order) {
   const section = document.getElementById('order-tracking-section');
   const queueEl = document.getElementById('tracking-queue-number');
@@ -99,7 +114,7 @@ function renderTrackingCard(order) {
     if (pollingLabel) {
       pollingLabel.textContent = 'Live update complete • Ready for pickup';
     }
-    section.classList.remove('border-indigo-200', 'bg-indigo-50');
+    section.classList.remove('border-blue-200', 'bg-blue-50');
     section.classList.add('border-emerald-400', 'bg-emerald-50');
   } else if (order.status === 'completed') {
     if (statusBadge) {
@@ -122,15 +137,16 @@ function renderTrackingCard(order) {
     }
     if (statusMessage) {
       statusMessage.textContent = 'The canteen kitchen is preparing your food. We will notify you as soon as it is ready.';
-      statusMessage.className = 'text-sm text-indigo-900 mt-1';
+      statusMessage.className = 'text-sm text-blue-950 mt-1';
     }
     if (pollingLabel) {
       pollingLabel.textContent = 'Checking status every 3s via Fetch API...';
     }
     section.classList.remove('border-emerald-400', 'bg-emerald-50');
-    section.classList.add('border-indigo-200', 'bg-indigo-50');
+    section.classList.add('border-blue-200', 'bg-blue-50');
   }
 
+  renderTrackingSteps(order.status);
   updateNotificationBanner();
 }
 
@@ -142,17 +158,17 @@ function updateNotificationBanner() {
     return;
   }
   if (Notification.permission === 'granted') {
-    btn.textContent = '🔔 Pickup Alerts Enabled';
+    btn.innerHTML = '<i class="fa-solid fa-bell" aria-hidden="true"></i> Pickup Alerts Enabled';
     btn.disabled = true;
     btn.className = 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800';
   } else if (Notification.permission === 'denied') {
-    btn.textContent = '🔕 Browser Alerts Blocked (In-App Active)';
+    btn.innerHTML = '<i class="fa-solid fa-bell-slash" aria-hidden="true"></i> Browser Alerts Blocked (In-App Active)';
     btn.disabled = true;
     btn.className = 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-200 text-slate-600';
   } else {
-    btn.textContent = '🔔 Enable Pickup Notification';
+    btn.innerHTML = '<i class="fa-solid fa-bell" aria-hidden="true"></i> Enable Pickup Notification';
     btn.disabled = false;
-    btn.className = 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700';
+    btn.className = 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-900 text-white hover:bg-blue-950';
   }
 }
 
