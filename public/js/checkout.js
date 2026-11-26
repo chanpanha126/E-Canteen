@@ -35,6 +35,7 @@ export function closeKhqrModal() {
   document.getElementById('khqr-modal')?.classList.add('hidden');
 }
 
+// Runs after KHQR payment succeeds: creates the order via POST /api/orders, clears cart, and starts live tracking
 async function finalizePaidOrder(md5) {
   if (isSubmittingOrder) return;
   isSubmittingOrder = true;
@@ -74,6 +75,7 @@ async function finalizePaidOrder(md5) {
   }
 }
 
+// Requests a Bakong KHQR code for the cart total and polls every 3s to auto-confirm payment
 async function loadKhqrCode() {
   const qrImg = document.getElementById('khqr-image');
   const qrLoading = document.getElementById('khqr-loading');
@@ -193,6 +195,7 @@ function validateCartNotEmpty() {
   return !isEmpty;
 }
 
+// Validates the customer's cart, table number (1–99), and optional order note before opening KHQR payment
 function validateCheckoutForm() {
   // Run every check (not short-circuit) so all errors show at once
   const results = [validateCartNotEmpty(), validateTableField(), validateNoteField()];
@@ -233,6 +236,7 @@ export async function openKhqrCheckoutModal() {
   await loadKhqrCode();
 }
 
+// Wires up customer checkout: form submit, live field validation, KHQR modal close, and demo payment simulation
 export function initCheckoutEvents() {
   document.getElementById('checkout-form')?.addEventListener('submit', handleCheckoutSubmit);
 

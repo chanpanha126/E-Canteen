@@ -49,6 +49,7 @@ function renderResultCount(shown) {
   countEl.textContent = searchQuery ? `${shown} ${label} found for "${searchQuery}"` : `${shown} ${label}`;
 }
 
+// Filters the loaded menu by active category & search text, then renders the customer menu cards
 function renderMenu() {
   const grid = document.getElementById('menu-grid');
   if (!grid) return;
@@ -142,6 +143,7 @@ function renderLoadingSkeleton() {
   if (countEl) countEl.textContent = 'Loading...';
 }
 
+// Fetches the menu from GET /api/menu; shows loading skeletons first and a retry box on failure
 export async function loadMenu() {
   const grid = document.getElementById('menu-grid');
   renderLoadingSkeleton();
@@ -187,6 +189,7 @@ function renderSheetQty() {
     : 'Sold out';
 }
 
+// Opens the customer food-details sheet with a larger photo, description, and quantity picker
 function openFoodSheet(item) {
   sheetItem = item;
   sheetQty = 1;
@@ -246,6 +249,7 @@ function initFoodSheetEvents() {
   });
 }
 
+// Sets up customer menu interactions: category tabs, live search, quick-add "+", card tap, and cart sync
 export function initMenuEvents() {
   document.getElementById('category-tabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-category]');

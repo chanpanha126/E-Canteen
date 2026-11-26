@@ -1,5 +1,7 @@
 /**
  * Teammate 1 Ownership: Shopping Cart, Table QR Parameter, & Order History State
+ * Customer side: reads ?table=N, manages the persistent localStorage cart drawer,
+ * handles mobile bottom-nav shortcuts, and displays recent orders on this device.
  */
 
 import { escapeHtml, showToast, getStatusLabel } from './ui.js';
@@ -157,6 +159,7 @@ export function closeCartDrawer() {
   drawer.classList.add('translate-x-full');
 }
 
+// Updates cart count badges, subtotal, drawer item rows, and notifies menu.js to refresh "In cart" tags
 export function renderCart() {
   const countBadge = document.getElementById('cart-count-badge');
   const itemsContainer = document.getElementById('cart-items-list');
@@ -253,6 +256,7 @@ export function getOrderHistory() {
   }
 }
 
+// Saves up to 20 recent customer orders in localStorage for the History modal
 export function saveOrderToHistory(order) {
   const history = getOrderHistory();
   const filtered = history.filter((o) => o.orderId !== order.orderId);

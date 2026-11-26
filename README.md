@@ -41,13 +41,13 @@ Never commit `.env`. It's already in `.gitignore`.
 ## What it does
 
 **Customer page (`index.html`)**
-- Reads the table number from the URL (`?table=7`), so one page works for every table.
-- Loads the menu from the API, with category tabs and live search. Sold-out items can't be added.
-- Food cards with photos (a grey placeholder shows if a photo is missing). Tap a card to open a details sheet with a bigger photo, the description and a − / + quantity picker; the round **+** button adds one straight away.
-- Cart is saved in `localStorage`, so a refresh doesn't lose it. Each menu card shows how many of that item are already in the cart. On phones there's a bottom bar with Menu, Orders and Cart.
-- The checkout form checks the table number (1–99), the note (120 characters max, no `<` or `>`), and that the cart isn't empty. Errors show under each field.
-- Payment uses a real Bakong KHQR code for the exact cart total.
-- After paying, a tracker shows Paid → Preparing → Ready → Picked up. It checks the order status every 3 seconds, and when the food is ready it plays a chime and sends a browser notification.
+- **Table Detection**: Reads the table number from the URL `QR-Code`, so one page works for every table.
+- **Menu and Search**: Fetch the MENU from the api call, with the categorical navigation and search function. 
+- **Item card and Detail**: Displays Food cards with photos. Tap hover on a cart to open details and description of the dishes with a set of -/+ quantity set, and a round **+** to immediatly add another one. 
+- **Cart**: Items saved in cart are store in `localStorage`, so a refresh doesnot lose the added items. Each card shows amount of item are already in the cart. On mobile devices there is a bottom bar with Menu, Orders and Cart.
+- **Form Validation**: On the check out form, it ask for validated table number (1-99), order note (max 120 chars) and the cart cannot be empty.
+- **Payment**: Generate KHQR code for exact cart total payment (real-time).
+- **Live Tracking**: Display status such as Paid, Preparing, Ready, Picked Up. it polls status every 3seconds, with a chime and browser short notification.
 
 **Staff panel (`staff.html`)**
 - Live order queue that refreshes every 4 seconds, with filter tabs (All / Preparing / Ready for Pickup / Picked Up) and a colour for each status.
