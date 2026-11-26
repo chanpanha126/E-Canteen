@@ -3,7 +3,7 @@
     "id": "food-01",
     "name": "Chicken Fried Rice",
     "category": "food",
-    "price": 3.5,
+    "price": 0.1,
     "available": true,
     "rating": 4.8,
     "description": "Wok-tossed jasmine rice with roasted chicken, egg, and fresh cucumber.",

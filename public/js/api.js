@@ -68,3 +68,16 @@ export function updateOrderStatus(orderId, status) {
     body: JSON.stringify({ status }),
   });
 }
+
+export function updateOrder(orderId, { status, customerNote }) {
+  return request(`/api/orders/${encodeURIComponent(orderId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ status, customerNote }),
+  });
+}
+
+export function deleteOrder(orderId) {
+  return request(`/api/orders/${encodeURIComponent(orderId)}`, {
+    method: 'DELETE',
+  });
+}

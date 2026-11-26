@@ -1,5 +1,7 @@
+const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { BakongKHQR, IndividualInfo, khqrData } = require('bakong-khqr');
+const crc16 = require('bakong-khqr/src/helper/crc16');
 
 // Official NBC Bakong endpoint used to check if a KHQR payment was received
 const BAKONG_VERIFY_URL = 'https://api-bakong.nbc.gov.kh/v1/check_transaction_by_md5';
@@ -14,6 +16,7 @@ async function generateKhqr({ amount, currency = 'USD' }) {
   const acquiringBank = (process.env.BAKONG_ACQUIRING_BANK || 'ABA Bank').trim();
   const accountName = (process.env.BAKONG_ACCOUNT_NAME || '').trim();
   const merchantCity = (process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh').trim();
+  const abaP2pTag = (process.env.ABA_P2P_TAG || '').trim();
 
   if (!accountId || !accountName) {
     throw new Error('Missing BAKONG_ACCOUNT_ID or BAKONG_ACCOUNT_NAME in .env');
@@ -45,8 +48,15 @@ async function generateKhqr({ amount, currency = 'USD' }) {
     throw new Error(result?.status?.message || 'Failed to generate Bakong KHQR');
   }
 
-  const qrString = result.data.qr;
-  const md5 = result.data.md5;
+  let qrString = result.data.qr;
+  let md5 = result.data.md5;
+
+  // Include ABA's P2P Tag 40 (if configured) and recalculate CRC-16 + MD5
+  if (abaP2pTag) {
+    const withoutCrc = qrString.slice(0, -4).replace('52045999', abaP2pTag + '52045999');
+    qrString = withoutCrc + crc16(withoutCrc);
+    md5 = crypto.createHash('md5').update(qrString).digest('hex');
+  }
 
   // Convert the EMVCo KHQR string into a PNG image Data URL for <img src="...">
   const qrImageDataUrl = await QRCode.toDataURL(qrString, {

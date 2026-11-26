@@ -181,4 +181,53 @@ router.patch('/:orderId/status', (req, res) => {
   });
 });
 
+// PUT /api/orders/:orderId — updates an order's status and/or customerNote
+router.put('/:orderId', (req, res) => {
+  const orderId = Number(req.params.orderId);
+  const { status, customerNote } = req.body || {};
+
+  if (!Number.isInteger(orderId)) {
+    return res.status(400).json({ error: 'Invalid orderId.' });
+  }
+
+  if (status !== undefined && !ALLOWED_STATUSES.includes(status)) {
+    return res.status(400).json({
+      error: 'Invalid status. Allowed values: preparing, ready, completed.',
+    });
+  }
+
+  const orders = getOrders();
+  const order = orders.find((o) => o.orderId === orderId);
+
+  if (!order) {
+    return res.status(404).json({ error: 'Order not found.' });
+  }
+
+  if (status !== undefined) order.status = status;
+  if (typeof customerNote === 'string') order.customerNote = customerNote.trim();
+
+  saveOrders(orders);
+  return res.json({ order });
+});
+
+// DELETE /api/orders/:orderId — cancels and removes an order
+router.delete('/:orderId', (req, res) => {
+  const orderId = Number(req.params.orderId);
+  if (!Number.isInteger(orderId)) {
+    return res.status(400).json({ error: 'Invalid orderId.' });
+  }
+
+  const orders = getOrders();
+  const index = orders.findIndex((o) => o.orderId === orderId);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Order not found.' });
+  }
+
+  const [deletedOrder] = orders.splice(index, 1);
+  saveOrders(orders);
+
+  return res.json({ deleted: true, orderId: deletedOrder.orderId });
+});
+
 module.exports = router;
