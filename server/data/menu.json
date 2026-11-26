@@ -143,6 +143,28 @@
     "image": "images/menu/drink-03.jpg"
   },
   {
+    "id": "drink-04",
+    "name": "Iced Americano",
+    "category": "drinks",
+    "price": 2.5,
+    "available": true,
+    "rating": 4.4,
+    "description": "Crisp, bold, and refreshing black coffee, fresh shots of hot espresso over cold water and ice.",
+    "emoji": "🍵",
+    "image": "images/menu/drink-04.jpg"
+  },
+  {
+    "id": "drink-05",
+    "name": "Hot Macchiato Latte",
+    "category": "drinks",
+    "price": 2.75,
+    "available": true,
+    "rating": 4.8,
+    "description": "A shot of rich espresso over hot, velvety steamed milk and thick microfoam.",
+    "emoji": "🍵",
+    "image": "images/menu/drink-05.jpg"
+  },
+  {
     "id": "dessert-02",
     "name": "Chocolate Croissant",
     "category": "dessert",
@@ -163,5 +185,16 @@
     "description": "Silky caramel custard infused with fresh coconut cream.",
     "emoji": "🍮",
     "image": "images/menu/dessert-03.jpg"
+  },
+  {
+    "id": "dessert-04",
+    "name": "Creme Caramel Pudding",
+    "category": "dessert",
+    "price": 2.75,
+    "available": true,
+    "rating": 4.5,
+    "description": "French baked custard dessert topped with a layer of clear, liquid caramel sauce.",
+    "emoji": "🍮",
+    "image": "images/menu/dessert-04.jpg"
   }
 ]

@@ -151,11 +151,15 @@ The food photos (`food-01.jpg` to `food-10.jpg`) were collected by our team. The
 
 | File | Photo | Author | License |
 |---|---|---|---|
+| `food-04.jpg` | [Fish Amok](https://silkroadrecipes.com/wp-content/uploads/2024/08/Cambodian-Khmer-Fish-Amok-Recipe-square.jpg) |
 | `drink-01.jpg` | [Ice Latte](https://www.vecteezy.com/free-png/ice-latte)|
 | `drink-02.jpg` | [Passionfruit drink](http://www.sesamenoodlebar.com/drink/item/passion-soda/) |
 | `drink-03.jpg` | [Matcha Latte im Glas](https://commons.wikimedia.org/wiki/File:Matcha_Latte_im_Glas.jpg) | Csuding | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `drink-04.jpg` | [Iced Americano](https://mocktail.net/wp-content/uploads/2022/03/homemade-Iced-Americano-recipe_1.jpg) |
+| `drink-05.jpg` | [Hot Macchiato Latte](https://podmkr.com/wp-content/uploads/2023/11/latte-macchiato-600x400.png) | PODMKR |
 | `dessert-02.jpg` | [Pain au chocolat](https://commons.wikimedia.org/wiki/File:Pain_au_chocolat_Luc_Viatour.jpg) | Luc Viatour | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
 | `dessert-03.jpg` | [Coconut Flan](https://commons.wikimedia.org/wiki/File:Coconut_Flan.jpg) | norwichnuts | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) |
+| `dessert-04.jpg` | [Creme Caramel Pudding](https://bakewithshivesh.com/wp-content/uploads/2023/04/IMG_0052-scaled.jpg) | BAKE WITH SHIVESH | 
 
 The AUPP logo belongs to the American University of Phnom Penh and is used here only for this class project.
 
